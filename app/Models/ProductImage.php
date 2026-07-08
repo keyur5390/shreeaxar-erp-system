@@ -6,37 +6,21 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class QuotationItem extends Model
+class ProductImage extends Model
 {
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'quotation_id',
         'product_id',
+        'image_path',
         'sort_order',
-        'description',
-        'image_url',
-        'unit',
-        'rate',
-        'quantity',
-        'discount_rate',
-        'line_total',
     ];
 
     protected function casts(): array
     {
         return [
-            'rate' => 'decimal:2',
-            'quantity' => 'integer',
-            'discount_rate' => 'decimal:2',
-            'line_total' => 'decimal:2',
             'sort_order' => 'integer',
         ];
-    }
-
-    public function quotation()
-    {
-        return $this->belongsTo(Quotation::class);
     }
 
     public function product()
