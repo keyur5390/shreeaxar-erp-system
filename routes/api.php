@@ -14,11 +14,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:300,1')->group(function (): void {
     Route::get('/health', HealthController::class);
 
-    Route::prefix('auth')->middleware('throttle:10,15')->group(function (): void {
+    Route::prefix('auth')->middleware('throttle:10,1')->group(function (): void {
         Route::post('/login', [AuthController::class, 'login']);
         Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
         Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+        Route::get('/reset-password/validate', [AuthController::class, 'validateResetToken'])->name('password.reset.validate');
     });
 
     Route::middleware('auth:sanctum')->group(function (): void {
