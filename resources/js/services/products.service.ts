@@ -1,3 +1,4 @@
-import api from './api'
+import { createCrudService } from './crud'
+import type { Product } from '@/types'
 
-export const productsService = { api }
+export const productsService = createCrudService<Product>('/products')
