@@ -1,6 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { authService } from '@/services/auth.service'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AsyncLoading from '@/components/common/AsyncLoading.vue'
 import AsyncError from '@/components/common/AsyncError.vue'
@@ -37,11 +38,26 @@ function isSafeRelativeRedirect(value: unknown): value is string {
   return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') && !/^https?:\/\//i.test(value)
 }
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   const hasToken = Boolean(authStore.token)
-  if (to.meta.requiresAuth && !hasToken) return { path: '/login', query: { redirect: isSafeRelativeRedirect(to.fullPath) ? to.fullPath : '/dashboard' } }
-  if (to.meta.publicOnly && hasToken) return { path: '/dashboard' }
+
+  if (hasToken) {
+    try {
+      authStore.setLoading(true)
+      const auth = await authService.me()
+      authStore.setAuth({ user: auth.user, token: auth.token ?? authStore.token })
+      authStore.setPermissions(auth.permissions ?? authStore.permissions)
+    } catch {
+      authStore.clearAuth()
+    } finally {
+      authStore.setLoading(false)
+    }
+  }
+
+  const isAuthenticated = Boolean(authStore.token)
+  if (to.meta.requiresAuth && !isAuthenticated) return { path: '/login', query: { redirect: isSafeRelativeRedirect(to.fullPath) ? to.fullPath : '/dashboard' } }
+  if (to.meta.publicOnly && isAuthenticated) return { path: '/dashboard' }
   if (to.meta.requiresAuth && !authStore.canView(to.meta.module as string | undefined)) return { path: '/dashboard' }
   return true
 })

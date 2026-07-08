@@ -1,10 +1,10 @@
 <script setup lang="ts" generic="T">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
 type LoadOptions<T> = (query: string, signal: AbortSignal) => Promise<T[]>
 const props = withDefaults(defineProps<{ loadOptions: LoadOptions<T>; modelValue?: T | null; placeholder?: string; renderOption?: (option: T) => string }>(), { placeholder: 'Search...' })
 const emit = defineEmits<{ 'update:modelValue': [value: T | null] }>()
 const query = ref('')
-const options = ref<T[]>([])
+const options = ref([]) as Ref<T[]>
 const loading = ref(false)
 const open = ref(false)
 const controller = ref<AbortController | null>(null)

@@ -24,7 +24,8 @@
     "vue-draggable-next": "latest",
     "vue-router": "^4.0.0",
     "yup": "latest",
-    "@fontsource/inter": "latest"
+    "@fontsource/inter": "latest",
+    "pinia-plugin-persistedstate": "latest"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "latest",
