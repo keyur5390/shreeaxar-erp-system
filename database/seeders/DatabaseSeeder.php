@@ -9,10 +9,19 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            PermissionSeeder::class,
-            RoleSeeder::class,
-            MasterDataSeeder::class,
-            CompanySeeder::class,
+            RolesAndPermissionsSeeder::class,
+            DepartmentsSeeder::class,
+            UnitsSeeder::class,
+            TaxSeeder::class,
+            AddressTypesSeeder::class,
+            CountriesAndStatesSeeder::class,
+            QuotationStatusSeeder::class,
+            CompanyDetailSeeder::class,
+            CounterSeeder::class,
+            SettingsSeeder::class,
+            BankDetailSeeder::class,
+            UserSeeder::class,
+            SampleDataSeeder::class,
         ]);
     }
 }
