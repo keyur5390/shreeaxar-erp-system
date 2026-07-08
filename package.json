@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {"dev": "vite", "build": "vue-tsc --noEmit && vite build", "typecheck": "vue-tsc --noEmit"},
+  "dependencies": {"@tanstack/vue-query": "latest", "@vueuse/core": "latest", "@vueuse/motion": "latest", "axios": "latest", "chart.js": "latest", "class-variance-authority": "latest", "clsx": "latest", "lucide-vue-next": "latest", "pinia": "latest", "tailwind-merge": "latest", "tailwindcss-animate": "latest", "vee-validate": "latest", "vue": "^3.5.0", "vue-chartjs": "latest", "vue-draggable-next": "latest", "vue-router": "^4.0.0", "yup": "latest"},
+  "devDependencies": {"@vitejs/plugin-vue": "latest", "autoprefixer": "latest", "postcss": "latest", "tailwindcss": "^3.4.0", "typescript": "latest", "vite": "latest", "vue-tsc": "latest"}
+}
