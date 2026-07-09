@@ -14,4 +14,6 @@ export const authService = {
   async refresh(): Promise<AuthPayload> { return unwrap(await api.post('/auth/refresh')) },
   async logout(): Promise<void> { await api.post('/auth/logout') },
   async forgotPassword(email: string): Promise<void> { await api.post('/auth/forgot-password', { email }) },
+  async verifyOtp(email: string, otp: string): Promise<{ reset_token: string }> { return unwrap(await api.post('/auth/verify-otp', { email, otp })) },
+  async resetPassword(resetToken: string, password: string, passwordConfirmation: string): Promise<void> { await api.post('/auth/reset-password', { reset_token: resetToken, new_password: password, new_password_confirmation: passwordConfirmation }) },
 }
