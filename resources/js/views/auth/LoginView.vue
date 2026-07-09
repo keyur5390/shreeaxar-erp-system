@@ -44,9 +44,9 @@ async function onSubmit(values: Record<string, unknown>) {
   alertMessage.value = ''
   try {
     const auth = await authService.login({ email: String(values.email ?? ''), password: String(values.password ?? ''), remember: Boolean(values.rememberMe) })
-    authStore.setAuth({ token: auth.token, user: auth.user })
+    authStore.setAuth({ token: auth.token ?? null, user: auth.user, expiresAt: auth.expires_at ?? auth.expiresAt ?? null })
     const currentAuth = await authService.me()
-    authStore.setAuth({ token: currentAuth.token ?? auth.token, user: currentAuth.user })
+    authStore.setAuth({ token: currentAuth.token ?? auth.token ?? null, user: currentAuth.user, expiresAt: currentAuth.expires_at ?? currentAuth.expiresAt ?? auth.expires_at ?? auth.expiresAt ?? null })
     authStore.setPermissions(currentAuth.permissions ?? auth.permissions ?? {})
     await router.push(redirectTo.value)
   } catch (error) {

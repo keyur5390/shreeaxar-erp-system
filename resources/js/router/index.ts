@@ -30,6 +30,7 @@ const router = createRouter({
     { path: '/login', name: 'Login', component: lazy(() => import('@/pages/Login.vue')), meta: { publicOnly: true, breadcrumb: 'Login' } },
     { path: '/forgot-password', name: 'Forgot Password', component: lazy(() => import('@/pages/ForgotPassword.vue')), meta: { publicOnly: true, breadcrumb: 'Forgot Password' } },
     { path: '/', component: AppLayout, children: protectedChildren, meta: { requiresAuth: true } },
+    { path: '/403', name: 'AccessDenied', component: lazy(() => import('@/components/common/AccessDenied.vue')), meta: { requiresAuth: true, breadcrumb: 'Access Denied' } },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: lazy(() => import('@/components/common/NotFound.vue')), meta: { breadcrumb: 'Not Found' } },
   ],
 })
@@ -38,27 +39,33 @@ function isSafeRelativeRedirect(value: unknown): value is string {
   return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//') && !/^https?:\/\//i.test(value)
 }
 
+let hasLoadedInitialAuth = false
+
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
   const hasToken = Boolean(authStore.token)
 
-  if (hasToken) {
+  if (!hasLoadedInitialAuth && hasToken) {
+    hasLoadedInitialAuth = true
     try {
       authStore.setLoading(true)
       const auth = await authService.me()
-      authStore.setAuth({ user: auth.user, token: auth.token ?? authStore.token })
-      authStore.setPermissions(auth.permissions ?? authStore.permissions)
+      authStore.setAuth({ user: auth.user, token: auth.token ?? authStore.token, expiresAt: auth.expires_at ?? auth.expiresAt ?? authStore.expiresAt })
+      authStore.setPermissions(auth.permissions)
     } catch {
       authStore.clearAuth()
     } finally {
       authStore.setLoading(false)
     }
+  } else if (!hasLoadedInitialAuth) {
+    hasLoadedInitialAuth = true
   }
 
   const isAuthenticated = Boolean(authStore.token)
   if (to.meta.requiresAuth && !isAuthenticated) return { path: '/login', query: { redirect: isSafeRelativeRedirect(to.fullPath) ? to.fullPath : '/dashboard' } }
   if (to.meta.publicOnly && isAuthenticated) return { path: '/dashboard' }
-  if (to.meta.requiresAuth && !authStore.canView(to.meta.module as string | undefined)) return { path: '/dashboard' }
+  const module = to.meta.module as string | undefined
+  if (to.meta.requiresAuth && module && !authStore.permissions[module]?.view && !authStore.isSuperAdmin) return { path: '/403' }
   return true
 })
 
