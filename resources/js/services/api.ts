@@ -104,10 +104,11 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshResponse = await api.post<{ token?: string; data?: { token?: string } }>('/auth/refresh', undefined, { _skipAuthRefresh: true } as RetriableRequestConfig)
+        const refreshResponse = await api.post<{ token?: string; expires_at?: string | null; expiresAt?: string | null; data?: { token?: string; expires_at?: string | null; expiresAt?: string | null } }>('/auth/refresh', undefined, { _skipAuthRefresh: true } as RetriableRequestConfig)
         const token = refreshResponse.data.token ?? refreshResponse.data.data?.token ?? null
+        const expiresAt = refreshResponse.data.expires_at ?? refreshResponse.data.expiresAt ?? refreshResponse.data.data?.expires_at ?? refreshResponse.data.data?.expiresAt ?? null
         const authStore = useAuthStore()
-        authStore.setToken(token)
+        authStore.setToken(token, expiresAt)
         processQueue(null, token)
         if (token) originalRequest.headers = { ...originalRequest.headers, Authorization: `Bearer ${token}` }
         return api(originalRequest)

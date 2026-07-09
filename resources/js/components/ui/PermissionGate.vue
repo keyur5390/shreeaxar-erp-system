@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { usePermissions } from '@/composables/usePermissions'
-const props = defineProps<{ module: string; action: string }>()
-const { can } = usePermissions()
-const allowed = computed(() => can(`${props.module}.${props.action}`) || can(`${props.module}:${props.action}`))
+import { usePermission } from '@/composables/usePermissions'
+import type { PermissionActions } from '@/types'
+
+const props = defineProps<{ module: string; action: keyof PermissionActions }>()
+const permission = usePermission(props.module)
+const allowed = computed(() => permission.value[props.action])
 </script>
-<template><slot v-if="allowed" /></template>
+
+<template>
+  <slot v-if="allowed" />
+</template>

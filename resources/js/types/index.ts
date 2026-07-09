@@ -1,6 +1,7 @@
 export type QuotationStatus = 'draft' | 'sent' | 'approved' | 'rejected' | 'expired' | 'cancelled'
 export type ExpiryStatus = 'expired' | 'expiring_soon' | null
-export type PermissionMap = Record<string, boolean>
+export type PermissionActions = { view: boolean; create: boolean; edit: boolean; delete: boolean }
+export type PermissionMap = Record<string, PermissionActions>
 
 export interface ApiResponse<T> { success: boolean; data: T; message?: string; errors?: Record<string, string[]> }
 export interface PaginatedResponse<T> { data: T[]; current_page: number; last_page: number; per_page: number; total: number; from?: number | null; to?: number | null }

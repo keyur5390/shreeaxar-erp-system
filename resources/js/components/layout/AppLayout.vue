@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Sidebar from './Sidebar.vue'
 import TopBar from './TopBar.vue'
+import SessionTimeoutModal from '@/components/ui/SessionTimeoutModal.vue'
 
 defineOptions({ name: 'AppLayout' })
 </script>
@@ -14,5 +15,6 @@ defineOptions({ name: 'AppLayout' })
         <slot />
       </main>
     </div>
+    <SessionTimeoutModal />
   </div>
 </template>
