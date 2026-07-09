@@ -7,6 +7,7 @@ return [
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'UTC',
+    'cron_enabled' => (bool) env('CRON_ENABLED', true),
     'locale' => 'en',
     'fallback_locale' => 'en',
     'faker_locale' => 'en_US',
