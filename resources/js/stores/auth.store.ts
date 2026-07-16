@@ -17,9 +17,24 @@ const normaliseAction = (action?: string): PermissionAction | null => {
 }
 
 function permissionNameToEntry(name: string): { module: string; action: PermissionAction } | null {
-  const [module, action] = name.includes(':') ? name.split(':') : name.split('.')
-  const normalised = normaliseAction(action)
-  return module && normalised ? { module, action: normalised } : null
+  if (name.includes(':')) {
+    const [module, action] = name.split(':')
+    const normalised = normaliseAction(action)
+    return module && normalised ? { module, action: normalised } : null
+  }
+  if (name.includes('.')) {
+    const [module, action] = name.split('.')
+    const normalised = normaliseAction(action)
+    return module && normalised ? { module, action: normalised } : null
+  }
+  const spaceIndex = name.indexOf(' ')
+  if (spaceIndex > 0) {
+    const action = name.slice(0, spaceIndex)
+    const module = name.slice(spaceIndex + 1)
+    const normalised = normaliseAction(action)
+    return module && normalised ? { module, action: normalised } : null
+  }
+  return null
 }
 
 export const useAuthStore = defineStore('auth', () => {

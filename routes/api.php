@@ -4,7 +4,12 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CustomerController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\HealthController;
+use App\Http\Controllers\API\AddressTypeController;
+use App\Http\Controllers\API\DepartmentController;
 use App\Http\Controllers\API\MasterController;
+use App\Http\Controllers\API\RoleController;
+use App\Http\Controllers\API\TaxController;
+use App\Http\Controllers\API\UnitController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\QuotationController;
 use App\Http\Controllers\API\SettingController;
@@ -31,11 +36,14 @@ Route::middleware('throttle:300,1')->group(function (): void {
         });
 
         Route::prefix('masters')->group(function (): void {
-            Route::apiResource('roles', MasterController::class);
-            Route::apiResource('departments', MasterController::class);
-            Route::apiResource('units', MasterController::class);
-            Route::apiResource('taxes', MasterController::class);
-            Route::apiResource('address-types', MasterController::class);
+            Route::get('modules', [RoleController::class, 'modules']);
+            Route::get('roles/{role}/permissions', [RoleController::class, 'getPermissions']);
+            Route::put('roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
+            Route::apiResource('roles', RoleController::class);
+            Route::apiResource('departments', DepartmentController::class)->except(['show']);
+            Route::apiResource('units', UnitController::class)->except(['show']);
+            Route::apiResource('taxes', TaxController::class)->only(['index', 'update']);
+            Route::apiResource('address-types', AddressTypeController::class)->except(['show']);
             Route::apiResource('countries', MasterController::class);
             Route::apiResource('states', MasterController::class);
             Route::apiResource('quotation-statuses', MasterController::class);

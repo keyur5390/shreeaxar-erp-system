@@ -2,6 +2,7 @@
 import Sidebar from './Sidebar.vue'
 import TopBar from './TopBar.vue'
 import SessionTimeoutModal from '@/components/ui/SessionTimeoutModal.vue'
+import ToastHost from '@/components/ui/ToastHost.vue'
 
 defineOptions({ name: 'AppLayout' })
 </script>
@@ -16,5 +17,6 @@ defineOptions({ name: 'AppLayout' })
       </main>
     </div>
     <SessionTimeoutModal />
+    <ToastHost />
   </div>
 </template>

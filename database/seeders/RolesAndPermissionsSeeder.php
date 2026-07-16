@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
@@ -26,15 +25,13 @@ class RolesAndPermissionsSeeder extends Seeder
             foreach ($actions as $action) {
                 $name = "{$action} {$module}";
                 $permissions[] = Permission::updateOrCreate(
-                    ['name' => $name, 'guard_name' => 'api'],
-                    ['id' => $this->idFor(Permission::class, ['name' => $name, 'guard_name' => 'api'])]
+                    ['name' => $name, 'guard_name' => 'api']
                 );
             }
         }
 
         $superAdmin = Role::updateOrCreate(
-            ['name' => 'Super Admin', 'guard_name' => 'api'],
-            ['id' => $this->idFor(Role::class, ['name' => 'Super Admin', 'guard_name' => 'api'])]
+            ['name' => 'Super Admin', 'guard_name' => 'api']
         );
         $superAdmin->syncPermissions($permissions);
 
@@ -46,8 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         $salesStaff = Role::updateOrCreate(
-            ['name' => 'Sales Staff', 'guard_name' => 'api'],
-            ['id' => $this->idFor(Role::class, ['name' => 'Sales Staff', 'guard_name' => 'api'])]
+            ['name' => 'Sales Staff', 'guard_name' => 'api']
         );
         $salesStaff->syncPermissions($salesPermissionNames);
 
@@ -57,12 +53,5 @@ class RolesAndPermissionsSeeder extends Seeder
     private function permissionNames(string $module, array $actions): array
     {
         return array_map(fn (string $action): string => "{$action} {$module}", $actions);
-    }
-
-    private function idFor(string $model, array $attributes): string
-    {
-        $record = $model::query()->where($attributes)->first();
-
-        return $record?->getKey() ?? (string) Str::uuid();
     }
 }

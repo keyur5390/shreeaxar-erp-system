@@ -11,6 +11,8 @@ class CompanyDetail extends Model
 
     public $incrementing = false;
 
+    public const CREATED_AT = null;
+
     protected $keyType = 'string';
 
     protected $fillable = [

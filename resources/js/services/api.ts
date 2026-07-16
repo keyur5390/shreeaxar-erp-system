@@ -20,11 +20,15 @@ type QueuedRequest = {
   reject: (error: unknown) => void
 }
 
-type RetriableRequestConfig = AxiosRequestConfig & { _retry?: boolean; _skipAuthRefresh?: boolean }
+type RetriableRequestConfig = AxiosRequestConfig & { _retry?: boolean; _skipAuthRefresh?: boolean; _csrfRetry?: boolean }
 
 let isRefreshing = false
 let csrfTokenPromise: Promise<void> | null = null
 let failedQueue: QueuedRequest[] = []
+
+export function resetCsrfToken(): void {
+  csrfTokenPromise = null
+}
 
 function notify(message: string): void {
   if (typeof window !== 'undefined') {
@@ -53,12 +57,33 @@ export const api = axios.create({
   xsrfHeaderName: 'X-XSRF-TOKEN',
 })
 
+function sanctumCsrfUrl(): string {
+  const apiUrl = import.meta.env.VITE_API_URL ?? ''
+  if (typeof apiUrl === 'string' && apiUrl.startsWith('/')) {
+    return '/sanctum/csrf-cookie'
+  }
+
+  const appUrl = import.meta.env.VITE_APP_URL ?? apiUrl.replace(/\/api\/?$/, '')
+  return `${appUrl.replace(/\/$/, '')}/sanctum/csrf-cookie`
+}
+
 export function getCsrfToken(): Promise<void> {
   if (!csrfTokenPromise) {
-    csrfTokenPromise = api.get('/sanctum/csrf-cookie', { _skipAuthRefresh: true } as RetriableRequestConfig).then(() => undefined).catch((error) => {
-      csrfTokenPromise = null
-      throw error
-    })
+    csrfTokenPromise = axios
+      .get(sanctumCsrfUrl(), {
+        withCredentials: true,
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        xsrfCookieName: 'XSRF-TOKEN',
+        xsrfHeaderName: 'X-XSRF-TOKEN',
+      })
+      .then(() => undefined)
+      .catch((error) => {
+        resetCsrfToken()
+        throw error
+      })
   }
 
   return csrfTokenPromise
@@ -88,6 +113,13 @@ api.interceptors.response.use(
     if (!error.response) {
       notify('No internet connection.')
       return Promise.reject(error)
+    }
+
+    if (status === 419 && !originalRequest._csrfRetry) {
+      originalRequest._csrfRetry = true
+      resetCsrfToken()
+      await getCsrfToken()
+      return api(originalRequest)
     }
 
     if (status === 401 && !originalRequest._retry && !originalRequest._skipAuthRefresh && !originalRequest.url?.includes('/auth/refresh')) {
