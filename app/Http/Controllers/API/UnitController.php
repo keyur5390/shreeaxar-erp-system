@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Requests\UnitRequest;
 use App\Models\Unit;
+use App\Support\MasterCache;
 use Illuminate\Http\JsonResponse;
 
 class UnitController extends BaseController
@@ -18,11 +19,12 @@ class UnitController extends BaseController
 
     public function index(): JsonResponse
     {
-        $units = Unit::query()
+        $units = MasterCache::remember('masters.units', fn (): array => Unit::query()
             ->withCount('products')
             ->orderBy('name')
             ->get()
-            ->map(fn (Unit $unit): array => $this->formatUnit($unit));
+            ->map(fn (Unit $unit): array => $this->formatUnit($unit))
+            ->all());
 
         return $this->successResponse($units);
     }
@@ -34,6 +36,7 @@ class UnitController extends BaseController
 
         $unit = Unit::create($validated);
         $unit->loadCount('products');
+        MasterCache::forget('masters.units');
 
         return $this->successResponse(
             $this->formatUnit($unit),
@@ -53,6 +56,7 @@ class UnitController extends BaseController
             'code' => $validated['code'],
             'name' => $validated['name'],
         ]);
+        MasterCache::forget('masters.units');
 
         return $this->successResponse(
             $this->formatUnit($unit->fresh()->loadCount('products')),
@@ -73,6 +77,7 @@ class UnitController extends BaseController
         }
 
         $unit->delete();
+        MasterCache::forget('masters.units');
 
         return $this->successResponse(null, 'Unit deleted successfully.');
     }

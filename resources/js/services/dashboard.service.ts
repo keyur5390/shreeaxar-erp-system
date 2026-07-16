@@ -1,9 +1,37 @@
 import api from './api'
 import { unwrap } from './crud'
-import type { DashboardKPIs, QuotationByStatus, QuotationTrend, TopProduct } from '@/types'
-
-export interface DashboardData { kpis: DashboardKPIs; quotations_by_status: QuotationByStatus[]; quotation_trends: QuotationTrend[]; top_products: TopProduct[] }
+import type {
+  DashboardByStatus,
+  DashboardData,
+  DashboardKPIs,
+  DashboardTrendMonth,
+  RecentActivityItem,
+  TopProduct,
+} from '@/types'
 
 export const dashboardService = {
-  async getDashboard(params?: Record<string, unknown>): Promise<DashboardData> { return unwrap((await api.get('/dashboard', { params })).data) },
+  async getAll(): Promise<DashboardData> {
+    return unwrap((await api.get('/dashboard/all')).data)
+  },
+
+  async getKpis(): Promise<DashboardKPIs> {
+    return unwrap((await api.get('/dashboard/kpis')).data)
+  },
+
+  async getByStatus(): Promise<DashboardByStatus[]> {
+    return unwrap((await api.get('/dashboard/quotation-by-status')).data)
+  },
+
+  async getQuotationTrend(year: number): Promise<DashboardTrendMonth[]> {
+    return unwrap((await api.get('/dashboard/quotation-trend', { params: { year } })).data)
+  },
+}
+
+export type {
+  DashboardData,
+  DashboardKPIs,
+  DashboardByStatus,
+  DashboardTrendMonth,
+  TopProduct,
+  RecentActivityItem,
 }

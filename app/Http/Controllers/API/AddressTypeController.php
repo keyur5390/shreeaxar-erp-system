@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Requests\AddressTypeRequest;
 use App\Models\Address;
 use App\Models\AddressType;
+use App\Support\MasterCache;
 use Illuminate\Http\JsonResponse;
 
 class AddressTypeController extends BaseController
@@ -19,11 +20,12 @@ class AddressTypeController extends BaseController
 
     public function index(): JsonResponse
     {
-        $addressTypes = AddressType::query()
+        $addressTypes = MasterCache::remember('masters.address_types', fn (): array => AddressType::query()
             ->withCount(['addresses as usage_count'])
             ->orderBy('name')
             ->get()
-            ->map(fn (AddressType $addressType): array => $this->formatAddressType($addressType));
+            ->map(fn (AddressType $addressType): array => $this->formatAddressType($addressType))
+            ->all());
 
         return $this->successResponse($addressTypes);
     }
@@ -31,6 +33,7 @@ class AddressTypeController extends BaseController
     public function store(AddressTypeRequest $request): JsonResponse
     {
         $addressType = AddressType::create($request->validated());
+        MasterCache::forget('masters.address_types');
 
         return $this->successResponse(
             $this->formatAddressType($addressType),
@@ -43,6 +46,7 @@ class AddressTypeController extends BaseController
     {
         $addressType = AddressType::findOrFail($id);
         $addressType->update($request->validated());
+        MasterCache::forget('masters.address_types');
 
         return $this->successResponse(
             $this->formatAddressType($addressType),
@@ -60,6 +64,7 @@ class AddressTypeController extends BaseController
         }
 
         $addressType->delete();
+        MasterCache::forget('masters.address_types');
 
         return $this->successResponse(null, 'Address type deleted successfully.');
     }

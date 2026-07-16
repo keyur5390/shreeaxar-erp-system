@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from 'vee-validate'
 import * as yup from 'yup'
-import draggable from 'vuedraggable'
+import { VueDraggableNext as draggable } from 'vue-draggable-next'
 import { ref } from 'vue'
 const schema = yup.object({ customer: yup.string().required(), item: yup.string().required(), amount: yup.number().positive().required() })
 const { defineField, errors } = useForm({ validationSchema: schema })

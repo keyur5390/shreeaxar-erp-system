@@ -5,6 +5,7 @@ import { Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import { addressTypesService } from '@/services/address-types.service'
+import { STALE_TIME } from '@/lib/queryTimes'
 import { useInlineEdit } from '@/composables/useInlineEdit'
 import { useToast } from '@/composables/useToast'
 import type { AddressType } from '@/types'
@@ -23,6 +24,7 @@ const editContainers = ref<Record<string, HTMLElement | null>>({})
 const addressTypesQuery = useQuery({
   queryKey: ['address-types'],
   queryFn: () => addressTypesService.list(),
+  staleTime: STALE_TIME.masters,
 })
 
 const addressTypes = computed(() => addressTypesQuery.data.value ?? [])

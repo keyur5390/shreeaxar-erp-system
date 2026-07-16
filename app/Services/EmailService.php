@@ -7,14 +7,15 @@ use App\Mail\QuotationMail;
 use App\Models\Quotation;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class EmailService
 {
+    public function __construct(private QuotationPdfService $quotationPdfService) {}
+
     public function sendQuotationEmail(Quotation $quotation, string $to, array $cc, string $subject, string $body): void
     {
-        $pdfPath = $this->createQuotationPdf($quotation);
+        $pdfPath = $this->quotationPdfService->generate($quotation);
 
         try {
             $this->sendWithRetry(function () use ($quotation, $to, $cc, $subject, $body, $pdfPath): void {
@@ -27,6 +28,11 @@ class EmailService
                 @unlink($pdfPath);
             }
         }
+    }
+
+    public function generateQuotationPdf(Quotation $quotation): string
+    {
+        return $this->quotationPdfService->generate($quotation);
     }
 
     public function sendOtpEmail(string $email, string $otp): void
@@ -56,18 +62,5 @@ class EmailService
                 throw $exception;
             }
         }
-    }
-
-    private function createQuotationPdf(Quotation $quotation): string
-    {
-        Storage::disk('public')->makeDirectory('temp');
-
-        $pdfPath = storage_path('app/public/temp/quotation-'.$quotation->getKey().'-'.time().'.pdf');
-        $html = '<h1>Quotation '.$quotation->quotation_number.'</h1>'
-            .'<p>Total: '.e((string) $quotation->total_amount).'</p>';
-
-        app('dompdf.wrapper')->loadHTML($html)->save($pdfPath);
-
-        return $pdfPath;
     }
 }

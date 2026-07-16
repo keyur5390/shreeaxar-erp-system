@@ -66,6 +66,8 @@ class AuditLogger
             'new_password_confirmation',
             'token',
             'otp',
+            'reset_token',
+            'remember_me',
         ];
 
         foreach ($input as $key => $value) {

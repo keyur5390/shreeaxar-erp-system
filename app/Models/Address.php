@@ -34,4 +34,14 @@ class Address extends Model
     {
         return $this->belongsTo(State::class);
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_addresses');
+    }
+
+    public function customers()
+    {
+        return $this->belongsToMany(Customer::class, 'customer_addresses');
+    }
 }

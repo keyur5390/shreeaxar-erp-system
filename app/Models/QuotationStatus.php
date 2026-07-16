@@ -26,4 +26,9 @@ class QuotationStatus extends Model
             'sort_order' => 'integer',
         ];
     }
+
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class, 'status_id');
+    }
 }

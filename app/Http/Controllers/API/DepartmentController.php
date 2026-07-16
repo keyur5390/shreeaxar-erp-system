@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Requests\DepartmentRequest;
 use App\Models\Department;
+use App\Support\MasterCache;
 use Illuminate\Http\JsonResponse;
 
 class DepartmentController extends BaseController
@@ -18,11 +19,12 @@ class DepartmentController extends BaseController
 
     public function index(): JsonResponse
     {
-        $departments = Department::query()
+        $departments = MasterCache::remember('masters.departments', fn (): array => Department::query()
             ->withCount('users')
             ->orderBy('name')
             ->get()
-            ->map(fn (Department $department): array => $this->formatDepartment($department));
+            ->map(fn (Department $department): array => $this->formatDepartment($department))
+            ->all());
 
         return $this->successResponse($departments);
     }
@@ -31,6 +33,7 @@ class DepartmentController extends BaseController
     {
         $department = Department::create($request->validated());
         $department->loadCount('users');
+        MasterCache::forget('masters.departments');
 
         return $this->successResponse(
             $this->formatDepartment($department),
@@ -43,6 +46,7 @@ class DepartmentController extends BaseController
     {
         $department = Department::query()->withCount('users')->findOrFail($id);
         $department->update($request->validated());
+        MasterCache::forget('masters.departments');
 
         return $this->successResponse(
             $this->formatDepartment($department),
@@ -59,6 +63,7 @@ class DepartmentController extends BaseController
         }
 
         $department->delete();
+        MasterCache::forget('masters.departments');
 
         return $this->successResponse(null, 'Department deleted successfully.');
     }

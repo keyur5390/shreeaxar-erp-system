@@ -1,16 +1,18 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
+import { useBreakpoints, useWindowSize } from '@vueuse/core'
 
 export function useBreakpoint() {
-  const width = ref(typeof window === 'undefined' ? 1024 : window.innerWidth)
-  const update = () => { width.value = window.innerWidth }
-
-  onMounted(() => window.addEventListener('resize', update, { passive: true }))
-  onUnmounted(() => window.removeEventListener('resize', update))
+  const bp = useBreakpoints({
+    mobile: 0,
+    tablet: 768,
+    desktop: 1024,
+  })
+  const { width } = useWindowSize()
 
   return {
     width,
-    isMobile: computed(() => width.value < 768),
-    isTablet: computed(() => width.value >= 768 && width.value < 1024),
-    isDesktop: computed(() => width.value >= 1024),
+    isMobile: computed(() => bp.smaller('tablet').value),
+    isTablet: computed(() => bp.between('tablet', 'desktop').value),
+    isDesktop: computed(() => bp.greaterOrEqual('desktop').value),
   }
 }

@@ -1,5 +1,5 @@
 declare module '@fontsource/inter'
-declare module 'vuedraggable'
+declare module 'vue-draggable-next'
 declare module 'pinia-plugin-persistedstate' {
   const piniaPluginPersistedstate: (context: unknown) => void
   export default piniaPluginPersistedstate

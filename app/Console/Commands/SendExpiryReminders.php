@@ -15,27 +15,32 @@ class SendExpiryReminders extends Command
 
     public function handle(EmailService $emailService): int
     {
-        $reminded = 0;
+        $targetDate = now()->addDays(3)->toDateString();
 
-        Quotation::query()
-            ->with(['authorizedBy', 'status'])
-            ->whereDate('expiry_date', now()->addDays(3)->toDateString())
+        $quotations = Quotation::query()
+            ->whereDate('expiry_date', $targetDate)
+            ->whereHas('status', fn ($query) => $query->whereNotIn('name', ['Accepted', 'Rejected']))
             ->where(function ($query): void {
                 $query->whereNull('reminder_sent_at')
                     ->orWhere('reminder_sent_at', '<', now()->subDays(7));
             })
-            ->whereHas('authorizedBy')
-            ->whereDoesntHave('status', function ($query): void {
-                $query->whereIn('name', ['Accepted', 'Rejected']);
-            })
-            ->each(function (Quotation $quotation) use ($emailService, &$reminded): void {
-                $emailService->sendExpiryReminder($quotation, $quotation->authorizedBy);
-                $quotation->forceFill(['reminder_sent_at' => now()])->save();
-                $reminded++;
-            });
+            ->with(['authorizedBy', 'customer', 'status'])
+            ->get();
 
-        Log::info('Quotation expiry reminders sent.', ['count' => $reminded]);
-        $this->info("Sent {$reminded} quotation expiry reminder(s).");
+        $sent = 0;
+
+        foreach ($quotations as $quotation) {
+            if ($quotation->authorizedBy === null) {
+                continue;
+            }
+
+            $emailService->sendExpiryReminder($quotation, $quotation->authorizedBy);
+            $quotation->update(['reminder_sent_at' => now()]);
+            $sent++;
+        }
+
+        Log::info('Quotation expiry reminders sent.', ['matched' => $quotations->count(), 'sent' => $sent]);
+        $this->info('Sent reminders for '.$sent.' quotations.');
 
         return self::SUCCESS;
     }

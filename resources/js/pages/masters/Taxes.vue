@@ -5,6 +5,7 @@ import { AlertTriangle, Pencil } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import { taxesService } from '@/services/taxes.service'
+import { STALE_TIME } from '@/lib/queryTimes'
 import { useInlineEdit } from '@/composables/useInlineEdit'
 import { useToast } from '@/composables/useToast'
 import type { Tax } from '@/types'
@@ -19,6 +20,7 @@ const editContainers = ref<Record<string, HTMLElement | null>>({})
 const taxesQuery = useQuery({
   queryKey: ['taxes'],
   queryFn: () => taxesService.list(),
+  staleTime: STALE_TIME.masters,
 })
 
 const taxes = computed(() => taxesQuery.data.value ?? [])

@@ -27,4 +27,9 @@ class BankDetail extends Model
             'is_primary' => 'boolean',
         ];
     }
+
+    public function quotations()
+    {
+        return $this->hasMany(Quotation::class);
+    }
 }

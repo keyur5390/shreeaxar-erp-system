@@ -7,6 +7,7 @@ import SkeletonTable from '@/components/ui/SkeletonTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import { unitsService } from '@/services/units.service'
+import { STALE_TIME } from '@/lib/queryTimes'
 import { useToast } from '@/composables/useToast'
 import type { Unit } from '@/types'
 import { ValidationError } from '@/services/api'
@@ -24,6 +25,7 @@ const deleteTarget = ref<Unit | null>(null)
 const unitsQuery = useQuery({
   queryKey: ['units'],
   queryFn: () => unitsService.list(),
+  staleTime: STALE_TIME.masters,
 })
 
 const units = computed(() => unitsQuery.data.value ?? [])

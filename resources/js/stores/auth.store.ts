@@ -117,7 +117,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const userFullName = computed(() => user.value?.name || [user.value?.first_name, user.value?.last_name].filter(Boolean).join(' ') || 'ERP User')
-  const userRoleName = computed(() => user.value?.roles?.[0]?.name || 'User')
+  const userRoleName = computed(() => {
+    const current = user.value
+    if (!current) return 'User'
+    return current.roles?.[0]?.name ?? (current as User & { role?: { name?: string } }).role?.name ?? 'User'
+  })
   const userInitials = computed(() => userFullName.value.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'EU')
   const isSuperAdmin = computed(() => userRoleName.value === 'Super Admin')
   const fullName = userFullName

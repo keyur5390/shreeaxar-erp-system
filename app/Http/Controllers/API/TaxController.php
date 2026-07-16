@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Requests\TaxRequest;
 use App\Models\Tax;
+use App\Support\MasterCache;
 use Illuminate\Http\JsonResponse;
 
 class TaxController extends BaseController
@@ -16,10 +17,11 @@ class TaxController extends BaseController
 
     public function index(): JsonResponse
     {
-        $taxes = Tax::query()
+        $taxes = MasterCache::remember('masters.taxes', fn (): array => Tax::query()
             ->orderBy('name')
             ->get()
-            ->map(fn (Tax $tax): array => $this->formatTax($tax));
+            ->map(fn (Tax $tax): array => $this->formatTax($tax))
+            ->all());
 
         return $this->successResponse($taxes);
     }
@@ -33,6 +35,7 @@ class TaxController extends BaseController
         }
 
         $tax->update(['rate' => $request->validated()['rate']]);
+        MasterCache::forget('masters.taxes');
 
         return $this->successResponse(
             $this->formatTax($tax->fresh()),

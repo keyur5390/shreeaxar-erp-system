@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\InvalidImageUploadException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -10,9 +11,23 @@ use Intervention\Image\ImageManager;
 
 class StorageService
 {
+    private const ALLOWED_IMAGE_MIMES = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+    ];
+
     public function storeImage(UploadedFile $file, string $folder): string
     {
-        return $file->store($folder, 'public');
+        $this->assertValidImageMime($file);
+
+        $extension = $this->extensionForMime($file->getMimeType());
+        $directory = trim($folder, '/');
+        $filename = Str::uuid().'.'.$extension;
+
+        Storage::disk('public')->putFileAs($directory, $file, $filename);
+
+        return $directory.'/'.$filename;
     }
 
     public function deleteImage(?string $path): void
@@ -29,6 +44,8 @@ class StorageService
 
     public function resizeAndStore(UploadedFile $file, string $folder, int $maxDim = 800): string
     {
+        $this->assertValidImageMime($file);
+
         $path = trim($folder, '/').'/'.Str::uuid().'.webp';
         $manager = new ImageManager(new Driver());
         $encoded = $manager->read($file->getRealPath())
@@ -54,5 +71,24 @@ class StorageService
         }
 
         return 'data:image/webp;base64,'.base64_encode(Storage::disk('public')->get($path));
+    }
+
+    private function assertValidImageMime(UploadedFile $file): void
+    {
+        $mime = $file->getMimeType();
+
+        if ($mime === null || ! in_array($mime, self::ALLOWED_IMAGE_MIMES, true)) {
+            throw new InvalidImageUploadException();
+        }
+    }
+
+    private function extensionForMime(string $mime): string
+    {
+        return match ($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            default => throw new InvalidImageUploadException(),
+        };
     }
 }

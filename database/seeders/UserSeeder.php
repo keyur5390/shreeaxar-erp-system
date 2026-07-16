@@ -14,7 +14,7 @@ class UserSeeder extends Seeder
         $plainPassword = 'admin@private';
 
         $user = User::updateOrCreate(
-            ['email' => 'admin@vytech.co'],
+            ['email' => 'admin@shreeaxar.com'],
             [
                 'password' => Hash::make($plainPassword),
                 'first_name' => 'Super',

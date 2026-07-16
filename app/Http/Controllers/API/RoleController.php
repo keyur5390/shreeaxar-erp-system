@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\MasterCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,12 +14,13 @@ class RoleController extends BaseController
 {
     public function index(): JsonResponse
     {
-        $roles = Role::query()
+        $roles = MasterCache::remember('masters.roles', fn (): array => Role::query()
             ->with('permissions')
             ->withCount('users')
             ->orderBy('name')
             ->get()
-            ->map(fn (Role $role): array => $this->formatRole($role));
+            ->map(fn (Role $role): array => $this->formatRole($role))
+            ->all());
 
         return $this->successResponse($roles);
     }
@@ -51,6 +53,7 @@ class RoleController extends BaseController
 
         $role->syncPermissions(['view dashboard']);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        MasterCache::forget('masters.roles');
 
         $role->load('permissions')->loadCount('users');
 
@@ -73,6 +76,7 @@ class RoleController extends BaseController
         ]);
 
         $role->update(['name' => $validated['name']]);
+        MasterCache::forget('masters.roles');
         $role->load('permissions')->loadCount('users');
 
         return $this->successResponse($this->formatRole($role), 'Role updated successfully.');
@@ -102,6 +106,7 @@ class RoleController extends BaseController
 
         $role->delete();
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        MasterCache::forget('masters.roles');
 
         return $this->successResponse(null, 'Role deleted successfully.');
     }
@@ -134,6 +139,7 @@ class RoleController extends BaseController
 
         $role->syncPermissions($permissionNames);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        MasterCache::forget('masters.roles');
 
         $role->refresh()->load('permissions');
 

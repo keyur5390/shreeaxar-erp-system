@@ -213,13 +213,20 @@ class AuthController extends Controller
     {
         $user->loadMissing('roles');
 
+        $roles = $user->roles->map(fn ($role): array => [
+            'id' => $role->id,
+            'name' => $role->name,
+        ])->values()->all();
+
         return [
             'id' => $user->id,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'email' => $user->email,
             'profile_image' => $user->profile_image,
-            'role' => ['name' => $user->roles->first()?->name],
+            'is_active' => $user->is_active,
+            'roles' => $roles,
+            'role' => ['name' => $roles[0]['name'] ?? null],
         ];
     }
 

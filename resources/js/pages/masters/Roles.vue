@@ -8,6 +8,7 @@ import SkeletonTable from '@/components/ui/SkeletonTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import { rolesService } from '@/services/roles.service'
+import { STALE_TIME } from '@/lib/queryTimes'
 import { useToast } from '@/composables/useToast'
 import type { Role } from '@/types'
 import { ValidationError } from '@/services/api'
@@ -25,6 +26,7 @@ const deleteTarget = ref<Role | null>(null)
 const rolesQuery = useQuery({
   queryKey: ['roles'],
   queryFn: () => rolesService.list(),
+  staleTime: STALE_TIME.masters,
 })
 
 const roles = computed(() => rolesQuery.data.value ?? [])

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 class BaseController extends Controller
@@ -45,5 +46,12 @@ class BaseController extends Controller
                 'total' => $paginator->total(),
             ],
         ]);
+    }
+
+    protected function resolvePerPage(Request $request, int $default = 15, int $max = 100): int
+    {
+        $limit = $request->integer('limit', $request->integer('per_page', $default));
+
+        return min(max($limit, 1), $max);
     }
 }
