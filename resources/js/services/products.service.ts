@@ -34,6 +34,10 @@ function buildProductFormData(
     formData.append('description', payload.description)
   }
 
+  if (payload.currency_id) {
+    formData.append('currency_id', payload.currency_id)
+  }
+
   if (payload.is_tax_included !== undefined) {
     formData.append('is_tax_included', payload.is_tax_included ? '1' : '0')
   }

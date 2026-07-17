@@ -17,6 +17,7 @@ class QuotationPdfService
             'customer',
             'status',
             'authorizedBy',
+            'currency:id,code,symbol,decimal_places',
             'items' => fn ($query) => $query->orderBy('sort_order'),
             'items.product:id,title',
         ]);

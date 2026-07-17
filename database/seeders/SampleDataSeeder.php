@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Address;
 use App\Models\AddressType;
 use App\Models\Country;
+use App\Models\Currency;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\State;
@@ -16,6 +17,7 @@ class SampleDataSeeder extends Seeder
     public function run(): void
     {
         $unit = Unit::query()->where('code', 'EACH')->firstOrFail();
+        $currency = Currency::query()->where('is_default', true)->firstOrFail();
 
         $products = [
             ['title' => 'Office Chair', 'rate' => 45000, 'model_number' => 'SAF-CHAIR-001'],
@@ -26,7 +28,7 @@ class SampleDataSeeder extends Seeder
         foreach ($products as $product) {
             Product::updateOrCreate(
                 ['model_number' => $product['model_number']],
-                $product + ['unit_id' => $unit->id, 'is_active' => true]
+                $product + ['unit_id' => $unit->id, 'currency_id' => $currency->id, 'is_active' => true]
             );
         }
 

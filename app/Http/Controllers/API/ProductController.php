@@ -4,9 +4,11 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
+use App\Models\Currency;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\QuotationItem;
+use App\Services\CurrencyConversionService;
 use App\Services\StorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +19,10 @@ use Illuminate\Support\Str;
 
 class ProductController extends BaseController
 {
-    public function __construct(private readonly StorageService $storageService)
+    public function __construct(
+        private readonly StorageService $storageService,
+        private readonly CurrencyConversionService $currencyConversionService,
+    )
     {
         $this->middleware('permission:view products')->only([
             'index',
@@ -37,7 +42,7 @@ class ProductController extends BaseController
         $perPage = $this->resolvePerPage($request, $defaultPerPage);
 
         $query = Product::query()
-            ->with(['unit:id,code,name'])
+            ->with(['unit:id,code,name', 'currency:id,code,symbol,decimal_places,exchange_rate'])
             ->withCount('images')
             ->orderBy('title');
 
@@ -65,6 +70,7 @@ class ProductController extends BaseController
     {
         $product = Product::with([
             'unit:id,code,name',
+            'currency:id,code,symbol,decimal_places,exchange_rate',
             'images' => fn ($query) => $query->orderBy('sort_order'),
         ])->findOrFail($id);
 
@@ -89,7 +95,7 @@ class ProductController extends BaseController
         }
 
         $products = Product::query()
-            ->with(['unit:id,code,name'])
+            ->with(['unit:id,code,name', 'currency:id,code,symbol,decimal_places,exchange_rate'])
             ->where('is_active', true)
             ->where(function ($builder) use ($query): void {
                 $builder->where('title', 'like', "%{$query}%")
@@ -103,6 +109,14 @@ class ProductController extends BaseController
                 'title' => $product->title,
                 'model_number' => $product->model_number,
                 'rate' => (float) $product->rate,
+                'currency_id' => $product->currency_id,
+                'currency' => $product->currency ? [
+                    'id' => $product->currency->id,
+                    'code' => $product->currency->code,
+                    'symbol' => $product->currency->symbol,
+                    'decimal_places' => (int) $product->currency->decimal_places,
+                    'exchange_rate' => (float) $product->currency->exchange_rate,
+                ] : null,
                 'is_tax_included' => $product->is_tax_included,
                 'unit' => $product->unit ? [
                     'code' => $product->unit->code,
@@ -169,6 +183,7 @@ class ProductController extends BaseController
                 $product = Product::create([
                     'title' => $validated['title'],
                     'rate' => $validated['rate'],
+                    'currency_id' => $validated['currency_id'],
                     'is_tax_included' => $validated['is_tax_included'] ?? false,
                     'unit_id' => $validated['unit_id'],
                     'model_number' => $validated['model_number'] ?? null,
@@ -267,7 +282,7 @@ class ProductController extends BaseController
 
                 $product->update(array_merge(
                     collect($validated)
-                        ->only(['title', 'rate', 'is_tax_included', 'unit_id', 'model_number', 'description', 'is_active'])
+                        ->only(['title', 'rate', 'currency_id', 'is_tax_included', 'unit_id', 'model_number', 'description', 'is_active'])
                         ->all(),
                     ['primary_image' => $primaryPath]
                 ));
@@ -398,6 +413,7 @@ class ProductController extends BaseController
                 $product = Product::create([
                     'title' => 'Copy of '.$original->title,
                     'rate' => $original->rate,
+                    'currency_id' => $original->currency_id,
                     'is_tax_included' => $original->is_tax_included,
                     'unit_id' => $original->unit_id,
                     'model_number' => $original->model_number,
@@ -523,6 +539,12 @@ class ProductController extends BaseController
             'title' => $product->title,
             'model_number' => $product->model_number,
             'rate' => (float) $product->rate,
+            'currency_id' => $product->currency_id,
+            'currency' => $product->currency ? [
+                'code' => $product->currency->code,
+                'symbol' => $product->currency->symbol,
+                'decimal_places' => (int) $product->currency->decimal_places,
+            ] : null,
             'is_tax_included' => $product->is_tax_included,
             'unit' => $product->unit ? [
                 'code' => $product->unit->code,
@@ -544,6 +566,12 @@ class ProductController extends BaseController
             'model_number' => $product->model_number,
             'description' => $product->description,
             'rate' => (float) $product->rate,
+            'currency_id' => $product->currency_id,
+            'currency' => $product->currency ? [
+                'code' => $product->currency->code,
+                'symbol' => $product->currency->symbol,
+                'decimal_places' => (int) $product->currency->decimal_places,
+            ] : null,
             'is_tax_included' => $product->is_tax_included,
             'unit_id' => $product->unit_id,
             'unit' => $product->unit ? [

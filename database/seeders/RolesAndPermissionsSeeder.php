@@ -14,7 +14,7 @@ class RolesAndPermissionsSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $modules = [
-            'dashboard', 'roles', 'departments', 'units', 'taxes', 'address_types',
+            'dashboard', 'roles', 'departments', 'units', 'currencies', 'taxes', 'address_types',
             'countries', 'quotation_statuses', 'bank_details', 'company_detail',
             'users', 'customers', 'products', 'quotations',
         ];
@@ -39,6 +39,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $this->permissionNames('quotations', ['view', 'create', 'edit', 'delete']),
             $this->permissionNames('customers', ['view', 'create', 'edit', 'delete']),
             $this->permissionNames('products', ['view', 'create', 'edit']),
+            $this->permissionNames('currencies', ['view']),
             ['view dashboard'],
         );
 

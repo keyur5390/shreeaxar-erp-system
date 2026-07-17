@@ -5,6 +5,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BankDetailController;
 use App\Http\Controllers\API\CompanyDetailController;
 use App\Http\Controllers\API\CountryController;
+use App\Http\Controllers\API\CurrencyController;
 use App\Http\Controllers\API\CustomerController;
 use App\Http\Controllers\API\DashboardController;
 use App\Http\Controllers\API\HealthController;
@@ -48,6 +49,7 @@ Route::middleware('throttle:300,1')->group(function (): void {
             Route::apiResource('roles', RoleController::class);
             Route::apiResource('departments', DepartmentController::class)->except(['show']);
             Route::apiResource('units', UnitController::class)->except(['show']);
+            Route::apiResource('currencies', CurrencyController::class)->except(['show']);
             Route::apiResource('taxes', TaxController::class)->only(['index', 'update']);
             Route::apiResource('address-types', AddressTypeController::class)->except(['show']);
 

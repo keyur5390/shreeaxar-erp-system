@@ -7,6 +7,7 @@ use App\Http\Requests\QuotationEmailRequest;
 use App\Http\Requests\QuotationStoreRequest;
 use App\Http\Requests\QuotationUpdateRequest;
 use App\Models\BankDetail;
+use App\Models\Currency;
 use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
@@ -15,6 +16,7 @@ use App\Models\QuotationStatusHistory;
 use App\Models\Settings;
 use App\Models\Tax;
 use App\Services\CalculationService;
+use App\Services\CurrencyConversionService;
 use App\Services\EmailService;
 use App\Services\QuotationNumberService;
 use App\Services\QuotationPdfService;
@@ -29,6 +31,7 @@ class QuotationController extends BaseController
 {
     public function __construct(
         private CalculationService $calculationService,
+        private CurrencyConversionService $currencyConversionService,
         private QuotationNumberService $quotationNumberService,
         private QuotationWorkflowService $workflowService,
         private StorageService $storageService,
@@ -274,12 +277,13 @@ class QuotationController extends BaseController
     {
         $validated = $request->validated();
         $vatRate = (float) (Tax::query()->where('is_default', true)->value('rate') ?? 0);
+        $currency = $this->resolveQuotationCurrency($validated['currency_id'] ?? null);
         $items = $this->resolveQuotationItemTaxFlags($validated['items']);
         $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $quotationNumber = $this->quotationNumberService->generate();
         $bankSnapshot = $this->resolveBankSnapshot($validated['bank_detail_id'] ?? null);
 
-        $quotation = DB::transaction(function () use ($validated, $vatRate, $totals, $quotationNumber, $bankSnapshot): Quotation {
+        $quotation = DB::transaction(function () use ($validated, $vatRate, $currency, $totals, $quotationNumber, $bankSnapshot): Quotation {
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
                 'customer_id' => $validated['customer_id'],
@@ -295,6 +299,9 @@ class QuotationController extends BaseController
                 'vat_amount' => $totals['vatAmount'],
                 'discount_amount' => $totals['discountAmount'],
                 'total_amount' => $totals['total'],
+                'currency_id' => $currency->id,
+                'exchange_rate' => $currency->exchange_rate,
+                'currency_snapshot' => $currency->snapshot(),
                 'vat_rate' => $vatRate,
                 'revision_number' => 1,
                 'last_modified_at' => now(),
@@ -427,14 +434,22 @@ class QuotationController extends BaseController
                 continue;
             }
 
-            $currentRate = (float) $item->product->rate;
+            $quotationCurrencyId = $original->currency_id;
+            $currentRate = $this->currencyConversionService->convert(
+                (float) $item->product->rate,
+                $item->product->currency_id,
+                $quotationCurrencyId,
+            );
             $originalRate = (float) $item->rate;
+            $currencyCode = $original->currency_snapshot['code'] ?? $original->currency?->code ?? '';
 
-            if ($currentRate !== $originalRate) {
+            if (abs($currentRate - $originalRate) > 0.01) {
                 $warnings[] = sprintf(
-                    'Product %s: rate changed from RWF %s to RWF %s.',
+                    'Product %s: rate changed from %s %s to %s %s.',
                     $item->product->title,
+                    $currencyCode,
                     number_format($originalRate, 2),
+                    $currencyCode,
                     number_format($currentRate, 2),
                 );
             }
@@ -452,11 +467,13 @@ class QuotationController extends BaseController
         }
 
         $vatRate = (float) $original->vat_rate;
+        $items = $this->resolveQuotationItemTaxFlags($items);
         $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $quotationNumber = $this->quotationNumberService->generate();
         $today = now()->toDateString();
+        $duplicateCurrency = Currency::query()->findOrFail($original->currency_id);
 
-        $quotation = DB::transaction(function () use ($original, $draftedStatus, $defaultExpiryDays, $totals, $quotationNumber, $today, $items): Quotation {
+        $quotation = DB::transaction(function () use ($original, $draftedStatus, $defaultExpiryDays, $totals, $quotationNumber, $today, $items, $duplicateCurrency): Quotation {
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
                 'customer_id' => $original->customer_id,
@@ -472,6 +489,9 @@ class QuotationController extends BaseController
                 'vat_amount' => $totals['vatAmount'],
                 'discount_amount' => $totals['discountAmount'],
                 'total_amount' => $totals['total'],
+                'currency_id' => $duplicateCurrency->id,
+                'exchange_rate' => $duplicateCurrency->exchange_rate,
+                'currency_snapshot' => $duplicateCurrency->snapshot(),
                 'vat_rate' => $original->vat_rate,
                 'revision_number' => 1,
                 'last_modified_at' => now(),
@@ -585,12 +605,24 @@ class QuotationController extends BaseController
             'authorizedBy:id,first_name,last_name,email',
             'bankDetail',
             'items' => fn ($query) => $query->orderBy('sort_order'),
-            'items.product:id,title,primary_image,rate',
+            'items.product:id,title,primary_image,rate,currency_id,is_tax_included',
+            'currency:id,code,symbol,decimal_places,exchange_rate',
             'statusHistory' => fn ($query) => $query->orderBy('created_at'),
             'statusHistory.fromStatus:id,name,color',
             'statusHistory.toStatus:id,name,color',
             'statusHistory.changedBy:id,first_name,last_name',
         ])->findOrFail($id);
+    }
+
+    private function resolveQuotationCurrency(?string $currencyId): Currency
+    {
+        if ($currencyId !== null) {
+            return Currency::query()
+                ->where('is_active', true)
+                ->findOrFail($currencyId);
+        }
+
+        return $this->currencyConversionService->defaultCurrency();
     }
 
     /**
@@ -713,6 +745,7 @@ class QuotationController extends BaseController
             'quotation_date' => $quotation->quotation_date,
             'expiry_date' => $quotation->expiry_date,
             'total_amount' => (float) $quotation->total_amount,
+            'currency_snapshot' => $quotation->currency_snapshot,
             'expiry_status' => $this->computeExpiryStatus($quotation),
             'days_until_expiry' => $this->computeDaysUntilExpiry($quotation),
             'customer' => $quotation->customer ? [
@@ -750,6 +783,14 @@ class QuotationController extends BaseController
             'vat_amount' => (float) $quotation->vat_amount,
             'discount_amount' => (float) $quotation->discount_amount,
             'total_amount' => (float) $quotation->total_amount,
+            'currency_id' => $quotation->currency_id,
+            'currency_snapshot' => $quotation->currency_snapshot,
+            'currency' => $quotation->currency ? [
+                'id' => $quotation->currency->id,
+                'code' => $quotation->currency->code,
+                'symbol' => $quotation->currency->symbol,
+                'decimal_places' => (int) $quotation->currency->decimal_places,
+            ] : ($quotation->currency_snapshot ?: null),
             'vat_rate' => (float) $quotation->vat_rate,
             'revision_number' => $quotation->revision_number,
             'last_modified_at' => $quotation->last_modified_at,

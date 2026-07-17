@@ -16,6 +16,7 @@ class ProductUpdateRequest extends FormRequest
         return [
             'title' => ['sometimes', 'required', 'string', 'max:300'],
             'rate' => ['sometimes', 'required', 'numeric', 'gt:0'],
+            'currency_id' => ['sometimes', 'required', 'uuid', 'exists:currencies,id'],
             'unit_id' => ['sometimes', 'required', 'uuid', 'exists:units,id'],
             'model_number' => ['sometimes', 'nullable', 'string', 'max:200'],
             'description' => ['sometimes', 'nullable', 'string'],

@@ -16,6 +16,7 @@ class ProductStoreRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:300'],
             'rate' => ['required', 'numeric', 'gt:0'],
+            'currency_id' => ['required', 'uuid', 'exists:currencies,id'],
             'unit_id' => ['required', 'uuid', 'exists:units,id'],
             'model_number' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string'],

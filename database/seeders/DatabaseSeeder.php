@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             DepartmentsSeeder::class,
             UnitsSeeder::class,
+            CurrenciesSeeder::class,
             TaxSeeder::class,
             AddressTypesSeeder::class,
             CountriesAndStatesSeeder::class,

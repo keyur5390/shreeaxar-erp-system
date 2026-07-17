@@ -205,7 +205,7 @@
                 <th style="width: 4%;">#</th>
                 <th style="width: 34%;">Description</th>
                 <th style="width: 8%;">Unit</th>
-                <th style="width: 12%;" class="num">Rate (RWF)</th>
+                <th style="width: 12%;" class="num">Rate ({{ $quotation->currency_snapshot['code'] ?? $quotation->currency?->code ?? 'RWF' }})</th>
                 <th style="width: 8%;" class="num">Qty</th>
                 <th style="width: 10%;" class="num">Disc %</th>
                 <th style="width: 14%;" class="num">Line Total</th>
@@ -251,7 +251,7 @@
             <td class="num">{{ number_format((float) $quotation->vat_amount, 2) }}</td>
         </tr>
         <tr>
-            <td class="label grand">Grand Total (RWF)</td>
+            <td class="label grand">Grand Total ({{ $quotation->currency_snapshot['code'] ?? $quotation->currency?->code ?? 'RWF' }})</td>
             <td class="num grand">{{ number_format((float) $quotation->total_amount, 2) }}</td>
         </tr>
     </table>

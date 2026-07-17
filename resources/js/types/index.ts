@@ -19,6 +19,20 @@ export interface UserDetail { id: string; first_name: string; last_name: string;
 export interface UserListParams { search?: string; role_id?: string; department_id?: string; is_active?: boolean | ''; page?: number; per_page?: number }
 export interface UserFormAddress { address_type_id: string; address_line_1: string; address_line_2?: string; country_id: string; state_id: string; city?: string; postal_code?: string }
 export interface Unit { id: string; code: string; name: string; is_default: boolean; products_count?: number; created_at?: string; updated_at?: string }
+export interface Currency {
+  id: string
+  code: string
+  name: string
+  symbol: string
+  decimal_places: number
+  exchange_rate: number
+  is_default: boolean
+  is_active: boolean
+  products_count?: number
+  quotations_count?: number
+  created_at?: string
+  updated_at?: string
+}
 export interface AddressType { id: string; name: string; usage_count?: number; created_at?: string; updated_at?: string }
 export interface Country { id: string; name: string; iso_code: string; states_count?: number; created_at?: string; updated_at?: string }
 export interface State { id: string; country_id: string; name: string; addresses_count?: number; created_at?: string; updated_at?: string }
@@ -100,6 +114,9 @@ export interface QuotationSummary {
   quotation_number: string
   quotation_date: string
   total_amount: number
+  currency_id?: string
+  currency_snapshot?: { code: string; symbol: string; decimal_places: number; exchange_rate?: number } | null
+  currency?: { code: string; symbol: string; decimal_places: number } | null
   status?: { id: string; name: string; color: string } | null
   created_at: string
 }
@@ -166,6 +183,9 @@ export interface QuotationDetail {
   discount_amount: number
   total_amount: number
   vat_rate: number
+  currency_id: string
+  currency_snapshot?: { code: string; symbol: string; decimal_places: number; exchange_rate?: number } | null
+  currency?: { id: string; code: string; symbol: string; decimal_places: number } | null
   revision_number: number
   last_modified_at?: string | null
   expiry_status: ExpiryStatus
@@ -202,6 +222,7 @@ export interface QuotationPayload {
   bank_detail_id?: string | null
   terms_conditions?: string | null
   notes?: string | null
+  currency_id?: string
   items: QuotationItemForm[]
   last_modified_at?: string | null
 }
@@ -248,6 +269,8 @@ export interface ProductListItem {
   title: string
   model_number: string | null
   rate: number
+  currency_id: string
+  currency?: { code: string; symbol: string; decimal_places: number } | null
   is_tax_included: boolean
   unit: { code: string; name: string } | null
   primary_image_url: string | null
@@ -279,6 +302,8 @@ export interface ProductDetail {
   model_number: string | null
   description: string | null
   rate: number
+  currency_id: string
+  currency?: { code: string; symbol: string; decimal_places: number; exchange_rate?: number } | null
   is_tax_included: boolean
   unit_id: string
   unit: { id: string; code: string; name: string } | null
@@ -302,6 +327,8 @@ export interface ProductSearchResult {
   title: string
   model_number: string | null
   rate: number
+  currency_id: string
+  currency?: { id: string; code: string; symbol: string; decimal_places: number; exchange_rate: number } | null
   is_tax_included: boolean
   unit: { code: string; name: string } | null
   primary_image_url: string | null
@@ -319,6 +346,7 @@ export interface ProductDuplicateResult {
 export type ProductPayload = {
   title: string
   rate: number
+  currency_id: string
   unit_id: string
   model_number?: string | null
   description?: string | null

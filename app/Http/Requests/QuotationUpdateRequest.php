@@ -21,6 +21,7 @@ class QuotationUpdateRequest extends FormRequest
             'expiry_date' => ['required', 'date'],
             'authorized_by_id' => ['required', 'uuid', 'exists:users,id'],
             'bank_detail_id' => ['nullable', 'uuid', 'exists:bank_details,id'],
+            'currency_id' => ['sometimes', 'uuid', 'exists:currencies,id'],
             'terms_conditions' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
             'last_modified_at' => ['sometimes', 'nullable', 'date'],

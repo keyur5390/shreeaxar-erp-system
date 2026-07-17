@@ -42,6 +42,7 @@ const allowedStatusesQuery = useQuery({
 })
 
 const quotation = computed(() => quotationQuery.data.value)
+const quotationCurrency = computed(() => quotation.value?.currency ?? quotation.value?.currency_snapshot ?? null)
 const allowedStatuses = computed(() => allowedStatusesQuery.data.value ?? [])
 
 const canDelete = computed(() => quotation.value?.status?.name === 'Drafted')
@@ -365,19 +366,19 @@ function productLink(item: QuotationItemDetail): string | null {
           <dl class="space-y-2 text-sm">
             <div class="flex justify-between">
               <dt class="text-slate-500">Sub Total</dt>
-              <dd>{{ formatCurrency(quotation.sub_total) }}</dd>
+              <dd>{{ formatCurrency(quotation.sub_total, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-slate-500">Discount Amount</dt>
-              <dd>{{ formatCurrency(quotation.discount_amount) }}</dd>
+              <dd>{{ formatCurrency(quotation.discount_amount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-slate-500">VAT ({{ quotation.vat_rate }}%)</dt>
-              <dd>{{ formatCurrency(quotation.vat_amount) }}</dd>
+              <dd>{{ formatCurrency(quotation.vat_amount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between border-t pt-2 text-base font-semibold">
               <dt>TOTAL</dt>
-              <dd>{{ formatCurrency(quotation.total_amount) }}</dd>
+              <dd>{{ formatCurrency(quotation.total_amount, quotationCurrency) }}</dd>
             </div>
           </dl>
         </div>
@@ -429,10 +430,10 @@ function productLink(item: QuotationItemDetail): string | null {
               </td>
               <td class="px-4 py-3 text-sm text-slate-600">{{ item.description }}</td>
               <td class="px-4 py-3 text-sm">{{ item.unit }}</td>
-              <td class="px-4 py-3 text-right text-sm">{{ formatCurrency(item.rate) }}</td>
+              <td class="px-4 py-3 text-right text-sm">{{ formatCurrency(item.rate, quotationCurrency) }}</td>
               <td class="px-4 py-3 text-right text-sm">{{ item.quantity }}</td>
               <td class="px-4 py-3 text-right text-sm">{{ item.discount_rate }}%</td>
-              <td class="px-4 py-3 text-right text-sm font-medium">{{ formatCurrency(item.line_total) }}</td>
+              <td class="px-4 py-3 text-right text-sm font-medium">{{ formatCurrency(item.line_total, quotationCurrency) }}</td>
             </tr>
           </tbody>
         </table>

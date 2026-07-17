@@ -40,6 +40,7 @@ const protectedChildren: RouteRecordRaw[] = [
   { path: 'masters/roles', name: 'Roles', component: lazy(() => import('@/pages/masters/Roles.vue')), meta: { requiresAuth: true, module: 'roles', breadcrumb: 'Roles' } },
   { path: 'masters/departments', name: 'Departments', component: lazy(() => import('@/pages/masters/Departments.vue')), meta: { requiresAuth: true, module: 'departments', breadcrumb: 'Departments' } },
   { path: 'masters/units', name: 'Units', component: lazy(() => import('@/pages/masters/Units.vue')), meta: { requiresAuth: true, module: 'units', breadcrumb: 'Units' } },
+  { path: 'masters/currencies', name: 'Currencies', component: lazy(() => import('@/pages/masters/Currencies.vue')), meta: { requiresAuth: true, module: 'currencies', breadcrumb: 'Currencies' } },
   { path: 'masters/taxes', name: 'Taxes', component: lazy(() => import('@/pages/masters/Taxes.vue')), meta: { requiresAuth: true, module: 'taxes', breadcrumb: 'Tax' } },
   { path: 'masters/address-types', name: 'AddressTypes', component: lazy(() => import('@/pages/masters/AddressTypes.vue')), meta: { requiresAuth: true, module: 'address_types', breadcrumb: 'Address Types' } },
   { path: 'masters/countries-states', name: 'CountriesStates', component: lazy(() => import('@/pages/masters/CountriesStates.vue')), meta: { requiresAuth: true, module: 'countries', breadcrumb: 'Countries & States' } },

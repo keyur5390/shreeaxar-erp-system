@@ -13,6 +13,7 @@ class Product extends Model
     protected $fillable = [
         'title',
         'rate',
+        'currency_id',
         'is_tax_included',
         'unit_id',
         'model_number',
@@ -33,6 +34,11 @@ class Product extends Model
     public function unit()
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     public function images()

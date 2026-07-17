@@ -25,6 +25,9 @@ class Quotation extends Model
         'vat_amount',
         'discount_amount',
         'total_amount',
+        'currency_id',
+        'exchange_rate',
+        'currency_snapshot',
         'vat_rate',
         'revision_number',
         'last_modified_at',
@@ -41,6 +44,8 @@ class Quotation extends Model
             'vat_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'exchange_rate' => 'decimal:8',
+            'currency_snapshot' => 'array',
             'vat_rate' => 'decimal:2',
             'last_modified_at' => 'datetime',
             'reminder_sent_at' => 'datetime',
@@ -66,6 +71,11 @@ class Quotation extends Model
     public function bankDetail()
     {
         return $this->belongsTo(BankDetail::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     public function items()

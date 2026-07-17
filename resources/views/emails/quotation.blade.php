@@ -33,7 +33,7 @@
                                     <td style="padding:12px 16px;border-bottom:1px solid #e5e7eb;text-align:right;">{{ optional($quotation->quotation_date)->format('d M Y') ?? 'N/A' }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 16px;font-weight:bold;color:#374151;">Total Amount (RWF)</td>
+                                    <td style="padding:12px 16px;font-weight:bold;color:#374151;">Total Amount ({{ $quotation->currency_snapshot['code'] ?? $quotation->currency?->code ?? 'RWF' }})</td>
                                     <td style="padding:12px 16px;text-align:right;color:#7A1B5D;font-weight:bold;">{{ number_format((float) $quotation->total_amount, 2) }}</td>
                                 </tr>
                             </table>

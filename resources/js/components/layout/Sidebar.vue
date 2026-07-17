@@ -44,6 +44,7 @@ const navItems: NavItem[] = [
       { label: 'Roles & Permissions', to: '/masters/roles', module: 'roles' },
       { label: 'Departments', to: '/masters/departments', module: 'departments' },
       { label: 'Units', to: '/masters/units', module: 'units' },
+      { label: 'Currencies', to: '/masters/currencies', module: 'currencies' },
       { label: 'Tax', to: '/masters/taxes', module: 'taxes' },
       { label: 'Address Types', to: '/masters/address-types', module: 'address_types' },
       { label: 'Countries & States', to: '/masters/countries-states', module: 'countries' },

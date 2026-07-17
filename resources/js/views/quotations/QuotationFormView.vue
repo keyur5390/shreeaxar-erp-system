@@ -23,6 +23,8 @@ import { useToast } from '@/composables/useToast'
 import { useFormDirtyGuard } from '@/composables/useFormDirtyGuard'
 import { ValidationError } from '@/services/api'
 import { calculateLineTotal, calculateQuotationTotals } from '@/utils/quotationCalc'
+import { convertCurrencyAmount } from '@/utils/currency'
+import { useCurrencies } from '@/composables/useCurrencies'
 import { formatCurrency } from '@/utils/formatters'
 import type { CustomerSearchResult, ProductSearchResult, QuotationItemForm } from '@/types'
 
@@ -91,8 +93,11 @@ const emptyItem = (): QuotationItemForm => ({
   is_tax_included: false,
 })
 
+const { activeCurrencies, defaultCurrency, findCurrency } = useCurrencies()
+
 const schema = yup.object({
   customer_id: yup.string().required('Customer is required.'),
+  currency_id: yup.string().required('Currency is required.'),
   status_id: yup.string().required('Status is required.'),
   quotation_date: yup.string().required('Quotation date is required.'),
   expiry_date: yup.string().required('Expiry date is required.')
@@ -130,6 +135,7 @@ const {
   validationSchema: schema,
   initialValues: {
     customer_id: '',
+    currency_id: '',
     status_id: '',
     quotation_date: todayIso(),
     expiry_date: addDaysIso(defaultExpiryDays()),
@@ -142,6 +148,7 @@ const {
 })
 
 const [statusId] = defineField('status_id')
+const [currencyId] = defineField('currency_id')
 const [quotationDate] = defineField('quotation_date')
 const [expiryDate] = defineField('expiry_date')
 const [bankDetailId] = defineField('bank_detail_id')
@@ -194,6 +201,21 @@ const settingsQuery = useQuery({
 const statuses = computed(() => statusesQuery.data.value ?? [])
 const banks = computed(() => banksQuery.data.value ?? [])
 const draftedStatusId = computed(() => statuses.value.find((status) => status.name === 'Drafted')?.id ?? '')
+
+const quotationCurrency = computed(() =>
+  findCurrency(currencyId.value)
+  ?? findCurrency(quotationQuery.data.value?.currency_id)
+  ?? defaultCurrency.value,
+)
+
+watch(
+  () => defaultCurrency.value,
+  (currency) => {
+    if (isEdit.value || currencyId.value || !currency) return
+    setFieldValue('currency_id', currency.id)
+  },
+  { immediate: true },
+)
 
 const effectiveVatRate = computed(() => {
   if (isEdit.value && quotationQuery.data.value?.vat_rate !== undefined) {
@@ -294,6 +316,7 @@ watch(
     resetForm({
       values: {
         customer_id: quotation.customer_id,
+        currency_id: quotation.currency_id,
         status_id: quotation.status_id,
         quotation_date: quotation.quotation_date,
         expiry_date: quotation.expiry_date,
@@ -381,7 +404,9 @@ function onProductSelected(index: number, fieldKey: string, product: ProductSear
     product_id: product.id,
     description: product.title,
     unit: product.unit?.code ?? product.unit?.name ?? 'pcs',
-    rate: Number(product.rate),
+    rate: product.currency && quotationCurrency.value
+      ? convertCurrencyAmount(Number(product.rate), product.currency, quotationCurrency.value)
+      : Number(product.rate),
     image_url: product.primary_image_url ?? null,
     is_tax_included: Boolean(product.is_tax_included),
   })
@@ -434,6 +459,7 @@ function buildPayload(formValues: typeof values, options?: { force?: boolean; as
     expiry_date: formValues.expiry_date,
     authorized_by_id: formValues.authorized_by_id,
     bank_detail_id: formValues.bank_detail_id || null,
+    ...(isEdit.value ? {} : { currency_id: formValues.currency_id }),
     terms_conditions: formValues.terms_conditions || null,
     notes: formValues.notes || null,
     items: (formValues.items ?? []).map((item) => ({
@@ -688,6 +714,21 @@ onMounted(() => {
           </label>
 
           <label class="block text-sm">
+            <span class="mb-1 block font-medium text-slate-700">Currency *</span>
+            <select
+              v-model="currencyId"
+              class="w-full rounded-md border px-3 py-2"
+              :disabled="isEdit"
+            >
+              <option value="">Select currency</option>
+              <option v-for="currency in activeCurrencies" :key="currency.id" :value="currency.id">
+                {{ currency.code }} — {{ currency.name }}
+              </option>
+            </select>
+            <ErrorMessage name="currency_id" class="mt-1 block text-xs text-red-600" />
+          </label>
+
+          <label class="block text-sm">
             <span class="mb-1 block font-medium text-slate-700">Quotation Status *</span>
             <select v-model="statusId" class="w-full rounded-md border px-3 py-2">
               <option value="">Select status</option>
@@ -854,13 +895,14 @@ onMounted(() => {
                   <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">Rate *</span>
                   <CurrencyInput
                     :model-value="Number(field.value.rate) || 0"
+                    :currency="quotationCurrency"
                     @update:model-value="(rate) => onRateChange(String(field.key), index, rate)"
                   />
                   <span
                     v-if="showRateBadge(String(field.key))"
                     class="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900"
                   >
-                    Rate differs from product price ({{ formatCurrency(productRateFor(String(field.key))) }})
+                    Rate differs from product price ({{ formatCurrency(productRateFor(String(field.key)), quotationCurrency) }})
                   </span>
                   <ErrorMessage :name="`items.${index}.rate`" class="mt-1 block text-xs text-red-600" />
                 </div>
@@ -894,7 +936,7 @@ onMounted(() => {
 
                 <div class="text-right text-sm font-medium lg:pt-2">
                   <span class="mb-1 block text-xs text-slate-500 lg:hidden">Line Total</span>
-                  {{ formatCurrency(lineTotal(field.value)) }}
+                  {{ formatCurrency(lineTotal(field.value), quotationCurrency) }}
                   <span
                     v-if="field.value.is_tax_included"
                     class="mt-1 block text-xs font-normal text-slate-500"
@@ -938,19 +980,19 @@ onMounted(() => {
           <dl class="grid gap-2 text-sm">
             <div class="flex justify-between">
               <dt class="text-slate-500">Sub Total</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.subTotal) }}</dd>
+              <dd class="font-medium">{{ formatCurrency(totals.subTotal, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-slate-500">Discount Amount</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.discountAmount) }}</dd>
+              <dd class="font-medium">{{ formatCurrency(totals.discountAmount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-slate-500">VAT ({{ effectiveVatRate }}%)</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.vatAmount) }}</dd>
+              <dd class="font-medium">{{ formatCurrency(totals.vatAmount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between border-t pt-2 text-base font-semibold">
               <dt>TOTAL</dt>
-              <dd>{{ formatCurrency(totals.total) }}</dd>
+              <dd>{{ formatCurrency(totals.total, quotationCurrency) }}</dd>
             </div>
           </dl>
         </div>

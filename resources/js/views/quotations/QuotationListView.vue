@@ -314,7 +314,7 @@ const duplicateMutation = useMutation({
       </template>
 
       <template #cell-amount="{ row }">
-        <span class="block text-right font-medium">{{ formatCurrency((row as QuotationListItem).total_amount) }}</span>
+        <span class="block text-right font-medium">{{ formatCurrency((row as QuotationListItem).total_amount, (row as QuotationListItem).currency_snapshot ?? (row as QuotationListItem).currency) }}</span>
       </template>
 
       <template #cell-status="{ row }">

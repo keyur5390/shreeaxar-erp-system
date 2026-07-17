@@ -261,7 +261,7 @@ const duplicateMutation = useMutation({
               </div>
               <div class="sm:col-span-2">
                 <dt class="text-slate-500">Rate</dt>
-                <dd class="text-2xl font-bold text-brand-blue">{{ formatCurrency(product.rate) }}</dd>
+                <dd class="text-2xl font-bold text-brand-blue">{{ formatCurrency(product.rate, product.currency) }}</dd>
               </div>
               <div class="sm:col-span-2">
                 <dt class="text-slate-500">Description</dt>

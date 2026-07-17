@@ -10,6 +10,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import CurrencyInput from '@/components/ui/CurrencyInput.vue'
 import { productsService } from '@/services/products.service'
 import { unitsService } from '@/services/units.service'
+import { useCurrencies } from '@/composables/useCurrencies'
 import { useToast } from '@/composables/useToast'
 import { useFormDirtyGuard } from '@/composables/useFormDirtyGuard'
 import { ValidationError } from '@/services/api'
@@ -74,17 +75,19 @@ const schema = yup.object({
   model_number: yup.string().max(200).nullable(),
   rate: yup.number().typeError('Rate is required.').required('Rate is required.').moreThan(0, 'Rate must be greater than 0.'),
   unit_id: yup.string().required('Unit is required.'),
+  currency_id: yup.string().required('Currency is required.'),
   description: yup.string().nullable(),
   is_tax_included: yup.boolean().default(false),
 })
 
-const { handleSubmit, resetForm, meta, values } = useForm({
+const { handleSubmit, resetForm, meta, values, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     title: '',
     model_number: '',
     rate: null as number | null,
     unit_id: '',
+    currency_id: '',
     description: '',
     is_tax_included: false,
   },
@@ -104,6 +107,21 @@ const unitsQuery = useQuery({
 })
 
 const units = computed(() => unitsQuery.data.value ?? [])
+const { activeCurrencies, defaultCurrency } = useCurrencies()
+
+const productCurrency = computed(() =>
+  activeCurrencies.value.find((currency) => currency.id === values.currency_id)
+  ?? defaultCurrency.value,
+)
+
+watch(
+  () => defaultCurrency.value,
+  (currency) => {
+    if (isEdit.value || values.currency_id || !currency) return
+    setFieldValue('currency_id', currency.id)
+  },
+  { immediate: true },
+)
 
 watch(
   () => productQuery.data.value,
@@ -116,6 +134,7 @@ watch(
         model_number: product.model_number ?? '',
         rate: product.rate,
         unit_id: product.unit_id,
+        currency_id: product.currency_id,
         description: product.description ?? '',
         is_tax_included: product.is_tax_included ?? false,
       },
@@ -307,6 +326,7 @@ const onSubmit = handleSubmit((formValues) => {
     title: formValues.title,
     model_number: formValues.model_number || null,
     rate: formValues.rate,
+    currency_id: formValues.currency_id,
     unit_id: formValues.unit_id,
     description: formValues.description || null,
     is_tax_included: formValues.is_tax_included ?? false,
@@ -366,10 +386,11 @@ onUnmounted(() => {
           </label>
 
           <label class="block text-sm">
-            <span class="mb-1 block font-medium text-slate-700">Rate (RWF) <span class="text-red-500">*</span></span>
+            <span class="mb-1 block font-medium text-slate-700">Rate <span class="text-red-500">*</span></span>
             <Field v-slot="{ field }" name="rate">
               <CurrencyInput
                 :model-value="field.value"
+                :currency="productCurrency"
                 @update:model-value="field.onChange"
               />
             </Field>
@@ -390,6 +411,17 @@ onUnmounted(() => {
                 </span>
               </span>
             </label>
+          </label>
+
+          <label class="block text-sm">
+            <span class="mb-1 block font-medium text-slate-700">Currency <span class="text-red-500">*</span></span>
+            <Field as="select" name="currency_id" class="w-full rounded-md border px-3 py-2">
+              <option value="">Select currency</option>
+              <option v-for="currency in activeCurrencies" :key="currency.id" :value="currency.id">
+                {{ currency.code }} — {{ currency.name }}
+              </option>
+            </Field>
+            <ErrorMessage name="currency_id" class="mt-1 block text-xs text-red-600" />
           </label>
 
           <label class="block text-sm">

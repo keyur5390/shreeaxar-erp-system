@@ -381,7 +381,7 @@ const duplicateMutation = useMutation({
             <p v-if="product.model_number" class="truncate text-xs text-slate-500">{{ product.model_number }}</p>
             <p v-else class="text-xs text-slate-400">No model number</p>
             <div class="mt-2 flex items-center justify-between gap-2">
-              <span class="font-bold text-brand-blue">{{ formatCurrency(product.rate) }}</span>
+              <span class="font-bold text-brand-blue">{{ formatCurrency(product.rate, product.currency) }}</span>
               <span
                 v-if="product.unit"
                 class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
@@ -468,7 +468,7 @@ const duplicateMutation = useMutation({
       </template>
 
       <template #cell-rate="{ row }">
-        <span class="font-semibold text-brand-blue">{{ formatCurrency((row as ProductListItem).rate) }}</span>
+        <span class="font-semibold text-brand-blue">{{ formatCurrency((row as ProductListItem).rate, (row as ProductListItem).currency) }}</span>
       </template>
 
       <template #cell-unit="{ row }">
