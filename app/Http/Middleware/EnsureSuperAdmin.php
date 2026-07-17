@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -14,7 +13,7 @@ class EnsureSuperAdmin
         $user = $request->user();
 
         if ($user === null || ! $user->hasRole('Super Admin')) {
-            throw new AuthorizationException('Super Admin access required.');
+            return response()->json(['message' => 'Insufficient permissions.'], 403);
         }
 
         return $next($request);

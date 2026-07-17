@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { inject, onMounted, onUnmounted, ref } from 'vue'
+import { useRequiredInject } from '@/lib/inject-context'
 import { popoverKey } from './popover-context'
 
-const popover = inject(popoverKey)
-if (!popover) throw new Error('PopoverTrigger must be used within Popover')
+const popover = useRequiredInject(popoverKey, 'PopoverTrigger must be used within Popover')
 
 const triggerEl = ref<HTMLElement | null>(null)
 

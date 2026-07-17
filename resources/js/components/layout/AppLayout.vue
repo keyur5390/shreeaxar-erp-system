@@ -20,11 +20,11 @@ const mainOffsetClass = computed(() =>
   <div class="min-h-screen bg-gray-50 lg:flex">
     <Sidebar />
     <div
-      class="flex min-h-screen flex-1 flex-col transition-[padding] duration-200"
+      class="flex min-h-screen min-w-0 flex-1 flex-col transition-[padding] duration-200"
       :class="mainOffsetClass"
     >
       <TopBar />
-      <main class="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6">
+      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">
         <RouterView />
       </main>
     </div>

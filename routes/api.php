@@ -33,7 +33,7 @@ Route::middleware('throttle:300,1')->group(function (): void {
         Route::get('/reset-password/validate', [AuthController::class, 'validateResetToken'])->name('password.reset.validate');
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'validate.token'])->group(function (): void {
         Route::prefix('auth')->group(function (): void {
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/logout', [AuthController::class, 'logout']);

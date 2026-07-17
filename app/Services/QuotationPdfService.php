@@ -30,7 +30,7 @@ class QuotationPdfService
 
         $pdfPath = storage_path('app/public/temp/quotation-'.$quotation->getKey().'-'.time().'.pdf');
 
-        $logoBase64 = $this->storageService->getBase64($company->logo);
+        $logoBase64 = $this->storageService->resolveBrandLogoBase64($company->logo);
 
         Pdf::loadView('pdf.quotation', [
             'quotation' => $quotation,

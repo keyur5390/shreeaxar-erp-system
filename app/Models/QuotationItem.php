@@ -20,6 +20,7 @@ class QuotationItem extends Model
         'rate',
         'quantity',
         'discount_rate',
+        'is_tax_included',
         'line_total',
     ];
 
@@ -29,6 +30,7 @@ class QuotationItem extends Model
             'rate' => 'decimal:2',
             'quantity' => 'integer',
             'discount_rate' => 'decimal:2',
+            'is_tax_included' => 'boolean',
             'line_total' => 'decimal:2',
             'sort_order' => 'integer',
         ];

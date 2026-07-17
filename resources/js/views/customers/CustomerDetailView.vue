@@ -16,7 +16,7 @@ import { customersService } from '@/services/customers.service'
 import { quotationsService } from '@/services/quotations.service'
 import { useToast } from '@/composables/useToast'
 import { abbreviateCurrency, formatCurrency, formatDate } from '@/utils/formatters'
-import type { CustomerAddress } from '@/types'
+import type { CustomerAddress, QuotationSummary } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,7 +49,11 @@ const quotationsQuery = useQuery({
 
 const customer = computed(() => customerQuery.data.value)
 const stats = computed(() => statsQuery.data.value)
-const recentQuotations = computed(() => quotationsQuery.data.value ?? [])
+const recentQuotations = computed<QuotationSummary[]>(() => {
+  const data = quotationsQuery.data.value
+  if (!data) return []
+  return Array.isArray(data) ? data : data.items
+})
 
 const isActive = computed(() => optimisticActive.value ?? customer.value?.is_active ?? false)
 

@@ -25,6 +25,18 @@ class UserSeeder extends Seeder
 
         $user->assignRole('Super Admin');
 
+        $salesUser = User::updateOrCreate(
+            ['email' => 'sales@shreeaxar.com'],
+            [
+                'password' => Hash::make('sales@private'),
+                'first_name' => 'Sales',
+                'last_name' => 'Staff',
+                'is_active' => true,
+            ]
+        );
+
+        $salesUser->assignRole('Sales Staff');
+
         if (! Hash::check($plainPassword, $user->password)) {
             $message = 'Warning: seeded admin password verification failed.';
             $this->command?->warn($message);

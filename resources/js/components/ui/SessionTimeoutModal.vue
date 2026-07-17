@@ -63,7 +63,7 @@ watch(isOpen, (open) => {
       <p class="mt-2 text-sm text-slate-600">You have been inactive. You will be logged out in {{ countdown }} seconds.</p>
       <div class="mt-6 flex justify-end gap-3">
         <button type="button" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" @click="logout(false)">Log Out</button>
-        <button type="button" class="rounded-xl bg-[#1F4E79] px-4 py-2 text-sm font-semibold text-white disabled:opacity-70" :disabled="isRefreshing" @click="stayLoggedIn">{{ isRefreshing ? 'Refreshing...' : 'Stay Logged In' }}</button>
+        <button type="button" class="rounded-xl bg-brand-teal px-4 py-2 text-sm font-semibold text-white hover:bg-brand-teal-dark disabled:opacity-70" :disabled="isRefreshing" @click="stayLoggedIn">{{ isRefreshing ? 'Refreshing...' : 'Stay Logged In' }}</button>
       </div>
     </section>
   </div>

@@ -8,6 +8,12 @@ use Illuminate\Http\Request;
 
 class SettingsController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view company_detail')->only(['show']);
+        $this->middleware('permission:edit company_detail')->only(['update']);
+    }
+
     private const ALLOWED_KEYS = [
         'quotation_default_expiry_days',
     ];

@@ -9,6 +9,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import FilterPanel from '@/components/ui/FilterPanel.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
 import { usersService } from '@/services/users.service'
@@ -45,7 +46,7 @@ const filters = computed(() => ({
   search: debouncedSearch.value || undefined,
   role_id: roleId.value || undefined,
   department_id: departmentId.value || undefined,
-  is_active: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : '',
+  is_active: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : undefined,
   page: page.value,
 }))
 
@@ -195,7 +196,7 @@ function canToggle(user: UserListItem) {
       @row-click="goToUser"
     >
       <template #topBar>
-        <div class="rounded-lg border bg-white p-4 shadow-card">
+        <FilterPanel :has-active-filters="hasActiveFilters">
           <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
             <label class="block text-sm">
               <span class="mb-1 block font-medium text-slate-700">Search</span>
@@ -240,7 +241,7 @@ function canToggle(user: UserListItem) {
               </button>
             </div>
           </div>
-        </div>
+        </FilterPanel>
       </template>
 
       <template v-if="!usersQuery.isLoading.value && !users.length" #emptyState>
@@ -284,7 +285,7 @@ function canToggle(user: UserListItem) {
         <StatusBadge
           v-if="(row as UserListItem).role_name"
           :label="(row as UserListItem).role_name!"
-          color="#1F4E79"
+          color="#1B5275"
           size="sm"
         />
         <span v-else class="text-slate-400">—</span>

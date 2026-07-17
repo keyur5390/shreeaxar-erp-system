@@ -1,6 +1,9 @@
 /vendor
 /node_modules
 /public/build
+/playwright-report
+/test-results
+/e2e/.auth
 /storage/*.key
 /storage/framework/cache/data/*
 .env

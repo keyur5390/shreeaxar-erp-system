@@ -187,7 +187,7 @@ defineExpose({ openSearch, closeSearch })
     </div>
 
     <label
-      class="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 focus-within:border-[#1F4E79] focus-within:bg-white"
+      class="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 focus-within:border-brand-teal focus-within:bg-white"
       :class="overlay ? 'max-w-none' : 'max-w-xl'"
     >
       <Search class="h-4 w-4 shrink-0" />

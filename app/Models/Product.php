@@ -13,6 +13,7 @@ class Product extends Model
     protected $fillable = [
         'title',
         'rate',
+        'is_tax_included',
         'unit_id',
         'model_number',
         'description',
@@ -24,6 +25,7 @@ class Product extends Model
     {
         return [
             'rate' => 'decimal:2',
+            'is_tax_included' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

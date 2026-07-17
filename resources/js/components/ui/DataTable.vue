@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends Record<string, unknown>">
+<script setup lang="ts" generic="T extends object">
 import { computed } from 'vue'
 import { useBreakpoint } from '@/composables/useBreakpoint'
 import SkeletonTable from './SkeletonTable.vue'

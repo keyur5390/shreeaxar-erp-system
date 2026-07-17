@@ -103,6 +103,7 @@ class ProductController extends BaseController
                 'title' => $product->title,
                 'model_number' => $product->model_number,
                 'rate' => (float) $product->rate,
+                'is_tax_included' => $product->is_tax_included,
                 'unit' => $product->unit ? [
                     'code' => $product->unit->code,
                     'name' => $product->unit->name,
@@ -168,6 +169,7 @@ class ProductController extends BaseController
                 $product = Product::create([
                     'title' => $validated['title'],
                     'rate' => $validated['rate'],
+                    'is_tax_included' => $validated['is_tax_included'] ?? false,
                     'unit_id' => $validated['unit_id'],
                     'model_number' => $validated['model_number'] ?? null,
                     'description' => $validated['description'] ?? null,
@@ -265,7 +267,7 @@ class ProductController extends BaseController
 
                 $product->update(array_merge(
                     collect($validated)
-                        ->only(['title', 'rate', 'unit_id', 'model_number', 'description', 'is_active'])
+                        ->only(['title', 'rate', 'is_tax_included', 'unit_id', 'model_number', 'description', 'is_active'])
                         ->all(),
                     ['primary_image' => $primaryPath]
                 ));
@@ -396,6 +398,7 @@ class ProductController extends BaseController
                 $product = Product::create([
                     'title' => 'Copy of '.$original->title,
                     'rate' => $original->rate,
+                    'is_tax_included' => $original->is_tax_included,
                     'unit_id' => $original->unit_id,
                     'model_number' => $original->model_number,
                     'description' => $original->description,
@@ -520,6 +523,7 @@ class ProductController extends BaseController
             'title' => $product->title,
             'model_number' => $product->model_number,
             'rate' => (float) $product->rate,
+            'is_tax_included' => $product->is_tax_included,
             'unit' => $product->unit ? [
                 'code' => $product->unit->code,
                 'name' => $product->unit->name,
@@ -540,6 +544,7 @@ class ProductController extends BaseController
             'model_number' => $product->model_number,
             'description' => $product->description,
             'rate' => (float) $product->rate,
+            'is_tax_included' => $product->is_tax_included,
             'unit_id' => $product->unit_id,
             'unit' => $product->unit ? [
                 'id' => $product->unit->id,

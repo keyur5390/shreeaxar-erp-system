@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { ChevronDown, ChevronRight, Download, Trash2, X } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import FilterPanel from '@/components/ui/FilterPanel.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import SkeletonTable from '@/components/ui/SkeletonTable.vue'
 import { auditLogService, type AuditLogItem } from '@/services/audit-log.service'
@@ -127,9 +128,13 @@ const cleanupMutation = useMutation({
 
 <template>
   <div class="space-y-6">
-    <PageHeader title="Audit Log" description="Review system activity and changes. Super Admin only." />
+    <PageHeader
+      title="Audit Log"
+      subtitle="Review system activity and changes. Super Admin only."
+      :breadcrumb="[{ label: 'Settings', href: '/settings' }, { label: 'Audit Log' }]"
+    />
 
-    <div class="rounded-lg border bg-white p-4 shadow-card">
+    <FilterPanel :has-active-filters="hasActiveFilters" title="Filter logs">
       <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
         <label class="flex min-w-[160px] flex-1 flex-col gap-1 text-sm">
           <span class="font-medium text-slate-600">Module</span>
@@ -188,7 +193,7 @@ const cleanupMutation = useMutation({
           </button>
         </div>
       </div>
-    </div>
+    </FilterPanel>
 
     <div v-if="loadError" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
       {{ loadError }}
@@ -201,7 +206,58 @@ const cleanupMutation = useMutation({
         No audit logs found.
       </div>
 
-      <div v-else class="overflow-x-auto">
+      <!-- Mobile card list -->
+      <div v-else class="divide-y lg:hidden">
+        <div
+          v-for="log in logs"
+          :key="`mobile-${log.id}`"
+          class="p-4"
+        >
+          <button
+            type="button"
+            class="flex w-full items-start justify-between gap-2 text-left"
+            @click="toggleRow(log)"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900">{{ log.action }}</p>
+              <p class="mt-0.5 text-xs text-slate-500">{{ log.module }}</p>
+              <p class="mt-1 text-xs text-slate-600">{{ formatDateTime(log.created_at) }}</p>
+              <p class="mt-1 truncate text-xs text-slate-500">{{ log.user_email || '—' }}</p>
+            </div>
+            <ChevronDown v-if="expandedId === log.id" class="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+            <ChevronRight v-else class="mt-1 h-4 w-4 shrink-0 text-slate-400" />
+          </button>
+          <div v-if="expandedId === log.id" class="mt-3 space-y-3 rounded-md border bg-slate-50 p-3">
+            <p class="text-xs text-slate-600"><span class="font-medium">Record:</span> {{ log.record_id || '—' }}</p>
+            <p class="text-xs text-slate-600"><span class="font-medium">IP:</span> {{ log.ip_address || '—' }}</p>
+            <div class="grid gap-3">
+              <div>
+                <h4 class="mb-1 text-xs font-semibold text-slate-700">Old Values</h4>
+                <pre v-if="!diffForLog(log).oldLines.length" class="rounded border bg-white p-2 text-xs text-slate-500">No old values.</pre>
+                <div v-else class="space-y-1">
+                  <div v-for="line in diffForLog(log).oldLines" :key="`m-old-${log.id}-${line.key}`" class="rounded border bg-white p-2 text-xs">
+                    <p class="font-semibold text-slate-600">{{ line.key }}</p>
+                    <pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-slate-800">{{ line.value }}</pre>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 class="mb-1 text-xs font-semibold text-slate-700">New Values</h4>
+                <pre v-if="!diffForLog(log).newLines.length" class="rounded border bg-white p-2 text-xs text-slate-500">No new values.</pre>
+                <div v-else class="space-y-1">
+                  <div v-for="line in diffForLog(log).newLines" :key="`m-new-${log.id}-${line.key}`" class="rounded border bg-white p-2 text-xs">
+                    <p class="font-semibold text-slate-600">{{ line.key }}</p>
+                    <pre class="mt-1 overflow-x-auto whitespace-pre-wrap text-slate-800">{{ line.value }}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop table -->
+      <div v-if="logs.length" class="hidden overflow-x-auto lg:block">
         <table class="min-w-full divide-y divide-slate-200">
           <thead class="bg-slate-50">
             <tr>

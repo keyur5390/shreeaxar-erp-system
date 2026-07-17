@@ -48,8 +48,8 @@ const protectedChildren: RouteRecordRaw[] = [
   { path: 'masters/company-detail', name: 'CompanyDetail', component: lazy(() => import('@/pages/masters/CompanyDetail.vue')), meta: { requiresAuth: true, module: 'company_detail', breadcrumb: 'Company Detail' } },
   { path: 'masters/tax', redirect: '/masters/taxes' },
   { path: 'masters/:pathMatch(.*)*', name: 'Masters', component: Placeholder, props: titleProps('Masters'), meta: { requiresAuth: true, module: 'masters', breadcrumb: 'Masters' } },
+  { path: 'settings', name: 'PortalSettings', component: lazy(() => import('@/pages/settings/PortalSettingsView.vue')), meta: { requiresAuth: true, superAdminOnly: true, breadcrumb: 'Portal Settings' } },
   { path: 'settings/audit-log', name: 'AuditLog', component: lazy(() => import('@/pages/settings/AuditLogView.vue')), meta: { requiresAuth: true, superAdminOnly: true, breadcrumb: 'Audit Log' } },
-  { path: 'settings', redirect: '/settings/audit-log' },
   { path: 'account', name: 'My Account', component: lazy(() => import('@/views/account/AccountSettingsView.vue')), meta: { requiresAuth: true, breadcrumb: 'My Account' } },
 ]
 

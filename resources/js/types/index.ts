@@ -118,6 +118,7 @@ export interface QuotationItemForm {
   rate: number
   quantity: number
   discount_rate: number
+  is_tax_included?: boolean
 }
 export interface QuotationItemDetail {
   id: string
@@ -130,6 +131,7 @@ export interface QuotationItemDetail {
   rate: number
   quantity: number
   discount_rate: number
+  is_tax_included: boolean
   line_total: number
   product?: { title: string; primary_image?: string | null; primary_image_url?: string | null } | null
   created_at: string
@@ -246,6 +248,7 @@ export interface ProductListItem {
   title: string
   model_number: string | null
   rate: number
+  is_tax_included: boolean
   unit: { code: string; name: string } | null
   primary_image_url: string | null
   images_count: number
@@ -276,6 +279,7 @@ export interface ProductDetail {
   model_number: string | null
   description: string | null
   rate: number
+  is_tax_included: boolean
   unit_id: string
   unit: { id: string; code: string; name: string } | null
   primary_image_url: string | null
@@ -298,6 +302,7 @@ export interface ProductSearchResult {
   title: string
   model_number: string | null
   rate: number
+  is_tax_included: boolean
   unit: { code: string; name: string } | null
   primary_image_url: string | null
   is_active: boolean
@@ -317,6 +322,7 @@ export type ProductPayload = {
   unit_id: string
   model_number?: string | null
   description?: string | null
+  is_tax_included?: boolean
   is_active?: boolean
 }
 /** @deprecated Use ProductDetail or ProductListItem */

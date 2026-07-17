@@ -236,14 +236,41 @@ make prod-up
 
 | Field | Value |
 |-------|-------|
-| Email | `admin@vytech.co` |
+| Email | `admin@shreeaxar.com` |
 | Password | `admin@private` |
 
 Change this password before deploying to any shared or production environment.
 
+**Sales Staff test user** (for permission testing after seed):
+
+| Field | Value |
+|-------|-------|
+| Email | `sales@shreeaxar.com` |
+| Password | `sales@private` |
+
+Re-run `php artisan db:seed --class=Database\\Seeders\\UserSeeder` if this user is missing.
+
+## Production checklist
+
+Before deploying:
+
+1. Set `APP_ENV=production`, `APP_DEBUG=false`, and generate a unique `APP_KEY`.
+2. Set a strong `HEALTH_TOKEN` and restrict `TRUSTED_PROXIES` to your load balancer/reverse proxy IPs only.
+3. Change all seeded default passwords.
+4. Run `php artisan config:cache`, `php artisan route:cache`, and `php artisan view:cache`.
+5. Build frontend assets with `npm run build` and serve from `public/`.
+6. Run backend tests: `composer test`.
+
 ## Useful commands
 
 ```bash
+# Backend tests
+composer test
+
+# End-to-end browser tests (Laravel on :8000 with built frontend assets)
+# Run: npm run build && npm run test:e2e
+npm run test:e2e
+
 # Frontend type checking
 npm run typecheck
 

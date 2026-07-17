@@ -27,7 +27,11 @@ class CalculationService
         }, $items);
 
         $subTotal = round(array_sum(array_column($itemsWithTotals, 'lineTotal')), 2);
-        $vatAmount = round($subTotal * $vatRate / 100, 2);
+        $taxableSubTotal = round(array_sum(array_map(
+            fn (array $item): float => ! empty($item['is_tax_included']) ? 0 : (float) $item['lineTotal'],
+            $itemsWithTotals
+        )), 2);
+        $vatAmount = round($taxableSubTotal * $vatRate / 100, 2);
         $discountAmount = round(array_sum(array_column($itemsWithTotals, 'discountDeduction')), 2);
         $total = round($subTotal + $vatAmount, 2);
 

@@ -34,6 +34,10 @@ function buildProductFormData(
     formData.append('description', payload.description)
   }
 
+  if (payload.is_tax_included !== undefined) {
+    formData.append('is_tax_included', payload.is_tax_included ? '1' : '0')
+  }
+
   if (payload.is_active !== undefined) {
     formData.append('is_active', payload.is_active ? '1' : '0')
   }

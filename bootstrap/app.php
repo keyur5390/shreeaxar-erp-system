@@ -17,6 +17,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Spatie\Permission\Exceptions\UnauthorizedException as PermissionUnauthorizedException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(web: __DIR__.'/../routes/web.php', api: __DIR__.'/../routes/api.php', commands: __DIR__.'/../routes/console.php', health: '/up')
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'health.token' => \App\Http\Middleware\ValidateHealthToken::class,
             'super_admin' => \App\Http\Middleware\EnsureSuperAdmin::class,
+            'validate.token' => \App\Http\Middleware\ValidateTokenVersion::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -55,6 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (AuthorizationException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Insufficient permissions.'], 403);
+            }
+        });
+
+        $exceptions->render(function (PermissionUnauthorizedException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Insufficient permissions.'], 403);
             }
@@ -88,6 +96,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (Throwable $e, Request $request) {
+            if ($e instanceof AuthorizationException || $e instanceof PermissionUnauthorizedException) {
+                return null;
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => config('app.debug') ? $e->getMessage() : 'An error occurred. Please try again.',

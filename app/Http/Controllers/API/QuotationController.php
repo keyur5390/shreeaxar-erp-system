@@ -7,6 +7,7 @@ use App\Http\Requests\QuotationEmailRequest;
 use App\Http\Requests\QuotationStoreRequest;
 use App\Http\Requests\QuotationUpdateRequest;
 use App\Models\BankDetail;
+use App\Models\Product;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationStatus;
@@ -273,7 +274,8 @@ class QuotationController extends BaseController
     {
         $validated = $request->validated();
         $vatRate = (float) (Tax::query()->where('is_default', true)->value('rate') ?? 0);
-        $totals = $this->calculationService->calculateQuotationTotals($validated['items'], $vatRate);
+        $items = $this->resolveQuotationItemTaxFlags($validated['items']);
+        $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $quotationNumber = $this->quotationNumberService->generate();
         $bankSnapshot = $this->resolveBankSnapshot($validated['bank_detail_id'] ?? null);
 
@@ -334,7 +336,8 @@ class QuotationController extends BaseController
         }
 
         $vatRate = (float) $quotation->vat_rate;
-        $totals = $this->calculationService->calculateQuotationTotals($validated['items'], $vatRate);
+        $items = $this->resolveQuotationItemTaxFlags($validated['items']);
+        $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $bankSnapshot = $this->resolveBankSnapshot($validated['bank_detail_id'] ?? null);
         $previousStatusId = $quotation->status_id;
 
@@ -444,6 +447,7 @@ class QuotationController extends BaseController
                 'rate' => $currentRate,
                 'quantity' => (int) $item->quantity,
                 'discount_rate' => (float) $item->discount_rate,
+                'is_tax_included' => $item->product->is_tax_included,
             ];
         }
 
@@ -590,6 +594,33 @@ class QuotationController extends BaseController
     }
 
     /**
+     * Resolve whether each line item already includes tax.
+     * Linked products use the product flag; manual lines default to taxable.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    private function resolveQuotationItemTaxFlags(array $items): array
+    {
+        $productIds = collect($items)->pluck('product_id')->filter()->unique()->values();
+        $productTaxFlags = Product::query()
+            ->whereIn('id', $productIds)
+            ->pluck('is_tax_included', 'id');
+
+        return array_map(function (array $item) use ($productTaxFlags): array {
+            $productId = $item['product_id'] ?? null;
+
+            if ($productId !== null && $productTaxFlags->has($productId)) {
+                $item['is_tax_included'] = (bool) $productTaxFlags->get($productId);
+            } else {
+                $item['is_tax_included'] = false;
+            }
+
+            return $item;
+        }, $items);
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $itemsWithTotals
      */
     private function createQuotationItems(Quotation $quotation, array $itemsWithTotals): void
@@ -605,6 +636,7 @@ class QuotationController extends BaseController
                 'rate' => $itemData['rate'],
                 'quantity' => $itemData['quantity'],
                 'discount_rate' => $itemData['discount_rate'] ?? 0,
+                'is_tax_included' => ! empty($itemData['is_tax_included']),
                 'line_total' => $itemData['lineTotal'],
             ]);
         }
@@ -793,6 +825,7 @@ class QuotationController extends BaseController
             'rate' => (float) $item->rate,
             'quantity' => (int) $item->quantity,
             'discount_rate' => (float) $item->discount_rate,
+            'is_tax_included' => $item->is_tax_included,
             'line_total' => (float) $item->line_total,
             'product' => $productPayload,
             'created_at' => $item->created_at,

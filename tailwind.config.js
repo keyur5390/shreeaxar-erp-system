@@ -10,13 +10,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        'brand-blue': '#1F4E79',
-        'brand-light': '#2E75B6',
-        'brand-accent': '#D6E4F0',
-        brand: { DEFAULT: '#1F4E79', foreground: '#ffffff' },
+        'brand-purple': '#7A1B5D',
+        'brand-purple-dark': '#5E1547',
+        'brand-teal': '#1B5275',
+        'brand-teal-dark': '#144058',
+        'brand-blue': '#1B5275',
+        'brand-light': '#2A7A9E',
+        'brand-gold': '#FFBC00',
+        'brand-gold-dark': '#E5A800',
+        'brand-mint': '#8DB063',
+        'brand-accent': '#E8EEF2',
+        'brand-accent-teal': '#E8EEF2',
+        brand: { DEFAULT: '#1B5275', foreground: '#ffffff' },
       },
       boxShadow: {
-        card: '0 10px 30px rgba(31, 78, 121, 0.10)',
+        card: '0 1px 3px rgba(15, 23, 42, 0.08)',
       },
     },
   },

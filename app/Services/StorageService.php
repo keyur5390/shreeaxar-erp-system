@@ -70,7 +70,38 @@ class StorageService
             return null;
         }
 
-        return 'data:image/webp;base64,'.base64_encode(Storage::disk('public')->get($path));
+        return 'data:'.$this->mimeForExtension(pathinfo($path, PATHINFO_EXTENSION)).';base64,'
+            .base64_encode(Storage::disk('public')->get($path));
+    }
+
+    public function getBase64FromPublic(string $relativePath): ?string
+    {
+        $fullPath = public_path($relativePath);
+
+        if (! is_file($fullPath)) {
+            return null;
+        }
+
+        return 'data:'.$this->mimeForExtension(pathinfo($fullPath, PATHINFO_EXTENSION)).';base64,'
+            .base64_encode((string) file_get_contents($fullPath));
+    }
+
+    public function resolveBrandLogoBase64(?string $companyLogoPath = null): ?string
+    {
+        $logo = $this->getBase64($companyLogoPath);
+
+        return $logo ?? $this->getBase64FromPublic('images/shreeaxar-logo.png');
+    }
+
+    private function mimeForExtension(?string $extension): string
+    {
+        return match (strtolower((string) $extension)) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => 'image/png',
+        };
     }
 
     private function assertValidImageMime(UploadedFile $file): void

@@ -105,7 +105,7 @@ const emptyAddress = (): CustomerFormAddress => ({
   postal_code: '',
 })
 
-const { handleSubmit, resetForm, meta, values, setFieldValue } = useForm({
+const { handleSubmit, resetForm, meta, values, setFieldValue: setFieldValueTyped } = useForm({
   validationSchema: schema,
   initialValues: {
     company_name: '',
@@ -117,6 +117,8 @@ const { handleSubmit, resetForm, meta, values, setFieldValue } = useForm({
     addresses: [emptyAddress()],
   },
 })
+
+const setFieldValue = setFieldValueTyped as (field: string, value: unknown) => void
 
 const { fields: addressFields, push: pushAddress, remove: removeAddress } = useFieldArray<CustomerFormAddress>('addresses')
 
@@ -203,7 +205,7 @@ watch(
       if (countryId && prevIds?.[index] !== countryId) {
         await loadStates(countryId)
         if (prevIds?.[index] && prevIds[index] !== countryId) {
-          setFieldValue(`addresses.${index}.state_id`, '')
+          setFieldValue(`addresses[${index}].state_id`, undefined)
         }
       }
     })
@@ -228,7 +230,7 @@ function getStatesForCountry(countryId: string) {
 }
 
 function onCountryChange(index: number, countryId: string) {
-  setFieldValue(`addresses.${index}.state_id`, '')
+  setFieldValue(`addresses[${index}].state_id`, undefined)
   if (countryId) loadStates(countryId)
 }
 
@@ -237,7 +239,7 @@ const createTypeMutation = useMutation({
   onSuccess: (created, variables) => {
     localAddressTypes.value = [...localAddressTypes.value, created]
     queryClient.invalidateQueries({ queryKey: ['address-types'] })
-    setFieldValue(`addresses.${variables.index}.address_type_id`, created.id)
+    setFieldValue(`addresses[${variables.index}].address_type_id`, created.id)
     popoverOpen[variables.index] = false
     newTypeNames[variables.index] = ''
     createTypeErrors[variables.index] = ''

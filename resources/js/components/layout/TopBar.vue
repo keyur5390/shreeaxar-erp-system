@@ -24,6 +24,7 @@ import { useUiStore } from '@/stores/ui.store'
 
 import { useNotifications } from '@/composables/useNotifications'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import BrandLogo from '@/components/common/BrandLogo.vue'
 
 import { quotationsService } from '@/services/quotations.service'
 
@@ -225,15 +226,17 @@ function alertLink(alert: QuotationListItem): void {
 
 
 
-    <RouterLink to="/dashboard" class="flex shrink-0 items-center gap-2 lg:hidden">
-
-      <span class="grid h-8 w-8 place-items-center rounded-lg bg-[#1F4E79] text-xs font-bold text-white">SA</span>
-
+    <RouterLink to="/dashboard" class="flex shrink-0 items-center sm:hidden">
+      <BrandLogo size="sm" />
     </RouterLink>
 
+    <div class="min-w-0 flex-1 sm:hidden">
+      <h1 class="truncate text-sm font-bold text-slate-950">{{ title }}</h1>
+    </div>
 
 
-    <div class="hidden min-w-0 flex-1 lg:block lg:w-64">
+
+    <div class="hidden min-w-0 flex-1 sm:block lg:w-64">
 
       <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Shree Axar ERP</p>
 
@@ -443,7 +446,7 @@ function alertLink(alert: QuotationListItem): void {
 
           <button class="flex items-center gap-2 rounded-xl border border-slate-200 px-2 py-1.5 hover:bg-slate-50" type="button">
 
-            <span class="grid h-8 w-8 place-items-center rounded-full bg-[#1F4E79] text-xs font-bold text-white">{{ authStore.initials }}</span>
+            <span class="grid h-8 w-8 place-items-center rounded-full bg-brand-teal text-xs font-bold text-white">{{ authStore.initials }}</span>
 
             <span class="hidden text-left md:block">
 

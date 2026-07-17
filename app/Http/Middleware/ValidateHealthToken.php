@@ -11,9 +11,18 @@ class ValidateHealthToken
     public function handle(Request $request, Closure $next): Response
     {
         $expected = (string) config('app.health_token');
+
+        if ($expected === '') {
+            if (app()->environment('local', 'testing')) {
+                return $next($request);
+            }
+
+            return response()->json(['message' => 'Unauthorized.'], 401);
+        }
+
         $provided = (string) $request->header('X-Health-Token');
 
-        if ($expected === '' || $provided === '' || ! hash_equals($expected, $provided)) {
+        if ($provided === '' || ! hash_equals($expected, $provided)) {
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 

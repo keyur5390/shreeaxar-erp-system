@@ -5,9 +5,13 @@
     "dev": "vite",
     "build": "vite build",
     "build:check": "vue-tsc --noEmit && vite build",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@fontsource/inter": "latest",
     "@tanstack/vue-query": "latest",
     "@vueuse/core": "latest",
     "@vueuse/motion": "latest",
@@ -17,6 +21,7 @@
     "clsx": "latest",
     "lucide-vue-next": "latest",
     "pinia": "latest",
+    "pinia-plugin-persistedstate": "latest",
     "tailwind-merge": "latest",
     "tailwindcss-animate": "latest",
     "vee-validate": "latest",
@@ -24,11 +29,10 @@
     "vue-chartjs": "latest",
     "vue-draggable-next": "latest",
     "vue-router": "^4.0.0",
-    "yup": "latest",
-    "@fontsource/inter": "latest",
-    "pinia-plugin-persistedstate": "latest"
+    "yup": "latest"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@vitejs/plugin-vue": "latest",
     "autoprefixer": "latest",
     "postcss": "latest",

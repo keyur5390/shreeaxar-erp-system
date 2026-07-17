@@ -19,6 +19,7 @@ class ProductUpdateRequest extends FormRequest
             'unit_id' => ['sometimes', 'required', 'uuid', 'exists:units,id'],
             'model_number' => ['sometimes', 'nullable', 'string', 'max:200'],
             'description' => ['sometimes', 'nullable', 'string'],
+            'is_tax_included' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             'keep_image_ids' => ['sometimes', 'string'],
             'primaryImage' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],

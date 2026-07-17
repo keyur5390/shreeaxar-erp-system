@@ -19,6 +19,7 @@ class ProductStoreRequest extends FormRequest
             'unit_id' => ['required', 'uuid', 'exists:units,id'],
             'model_number' => ['nullable', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
+            'is_tax_included' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             'primaryImage' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'images' => ['sometimes', 'array'],

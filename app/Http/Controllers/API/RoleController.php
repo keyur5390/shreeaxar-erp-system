@@ -12,6 +12,14 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends BaseController
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view roles')->only(['index', 'show', 'getPermissions', 'modules']);
+        $this->middleware('permission:create roles')->only(['store']);
+        $this->middleware('permission:edit roles')->only(['update', 'updatePermissions']);
+        $this->middleware('permission:delete roles')->only(['destroy']);
+    }
+
     public function index(): JsonResponse
     {
         $roles = MasterCache::remember('masters.roles', fn (): array => Role::query()

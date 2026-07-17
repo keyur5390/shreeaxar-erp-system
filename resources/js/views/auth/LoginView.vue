@@ -71,7 +71,7 @@ watchEffect(redirectAuthenticated)
         <label for="email" class="mb-1.5 block text-sm font-semibold text-slate-700">Email</label>
         <div class="relative">
           <Mail class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <Field id="email" name="email" type="email" autocomplete="email" class="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-[#1F4E79] focus:ring-4 focus:ring-blue-100" placeholder="you@company.com" />
+          <Field id="email" name="email" type="email" autocomplete="email" class="w-full rounded-lg border border-slate-200 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-accent" placeholder="you@company.com" />
         </div>
         <ErrorMessage name="email" class="mt-1 block text-xs font-medium text-red-600" />
       </div>
@@ -80,7 +80,7 @@ watchEffect(redirectAuthenticated)
         <label for="password" class="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
         <div class="relative">
           <Lock class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-          <Field id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" class="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-11 text-sm outline-none transition focus:border-[#1F4E79] focus:ring-4 focus:ring-blue-100" placeholder="Enter your password" />
+          <Field id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" class="w-full rounded-lg border border-slate-200 py-3 pl-11 pr-11 text-sm outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-accent" placeholder="Enter your password" />
           <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword">
             <EyeOff v-if="showPassword" class="h-5 w-5" /><Eye v-else class="h-5 w-5" />
           </button>
@@ -89,13 +89,13 @@ watchEffect(redirectAuthenticated)
       </div>
 
       <div class="flex items-center justify-between text-sm">
-        <label class="inline-flex items-center gap-2 font-medium text-slate-600"><Field name="rememberMe" type="checkbox" :value="true" class="h-4 w-4 rounded border-slate-300 text-[#1F4E79] focus:ring-[#1F4E79]" />Remember Me</label>
-        <RouterLink to="/forgot-password" class="font-semibold text-[#1F4E79] hover:underline">Forgot password?</RouterLink>
+        <label class="inline-flex items-center gap-2 font-medium text-slate-600"><Field name="rememberMe" type="checkbox" :value="true" class="h-4 w-4 rounded border-slate-300 text-brand-teal focus:ring-brand-teal" />Remember Me</label>
+        <RouterLink to="/forgot-password" class="font-medium text-brand-teal hover:underline">Forgot password?</RouterLink>
       </div>
 
       <div v-if="alertMessage" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" :class="{ 'animate-shake': shouldShake }">{{ alertMessage }}</div>
 
-      <button type="submit" class="flex w-full items-center justify-center rounded-xl bg-[#1F4E79] px-4 py-3 font-semibold text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#173d61] disabled:cursor-not-allowed disabled:opacity-70" :disabled="isSubmitting">
+      <button type="submit" class="flex w-full items-center justify-center rounded-lg bg-brand-teal px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-teal-dark disabled:cursor-not-allowed disabled:opacity-70" :disabled="isSubmitting">
         <span v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
         Sign In
       </button>

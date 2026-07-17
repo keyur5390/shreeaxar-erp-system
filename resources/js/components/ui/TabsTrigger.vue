@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import { cn } from '@/lib/utils'
+import { useRequiredInject } from '@/lib/inject-context'
 import { tabsKey } from './tabs-context'
 
 const props = defineProps<{
@@ -8,8 +9,7 @@ const props = defineProps<{
   class?: string
 }>()
 
-const tabs = inject(tabsKey)
-if (!tabs) throw new Error('TabsTrigger must be used within Tabs')
+const tabs = useRequiredInject(tabsKey, 'TabsTrigger must be used within Tabs')
 
 const isActive = computed(() => tabs.activeTab.value === props.value)
 

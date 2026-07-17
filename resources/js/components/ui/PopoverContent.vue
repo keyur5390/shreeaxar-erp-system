@@ -2,6 +2,7 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Teleport } from 'vue'
 import { cn } from '@/lib/utils'
+import { useRequiredInject } from '@/lib/inject-context'
 import { popoverKey } from './popover-context'
 
 const props = withDefaults(defineProps<{
@@ -11,8 +12,7 @@ const props = withDefaults(defineProps<{
   align: 'start',
 })
 
-const popover = inject(popoverKey)
-if (!popover) throw new Error('PopoverContent must be used within Popover')
+const popover = useRequiredInject(popoverKey, 'PopoverContent must be used within Popover')
 
 const contentRef = ref<HTMLElement | null>(null)
 const position = ref({ top: 0, left: 0 })

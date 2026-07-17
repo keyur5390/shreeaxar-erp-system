@@ -19,6 +19,7 @@ import DataTable from '@/components/ui/DataTable.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import FilterPanel from '@/components/ui/FilterPanel.vue'
 import LazyImage from '@/components/ui/LazyImage.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import ToggleSwitch from '@/components/ui/ToggleSwitch.vue'
@@ -52,7 +53,7 @@ watch(searchInput, (value) => applySearch(value))
 const filters = computed(() => ({
   search: debouncedSearch.value || undefined,
   unit_id: unitFilter.value || undefined,
-  is_active: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : '',
+  is_active: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : undefined,
   page: page.value,
   grid: viewMode.value === 'grid',
 }))
@@ -232,7 +233,7 @@ const duplicateMutation = useMutation({
       {{ loadError }}
     </div>
 
-    <div class="mb-4 rounded-lg border bg-white p-4 shadow-card">
+    <FilterPanel class="mb-4" :has-active-filters="hasActiveFilters">
       <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <label class="block text-sm">
           <span class="mb-1 block font-medium text-slate-700">Search</span>
@@ -272,7 +273,7 @@ const duplicateMutation = useMutation({
           </button>
         </div>
       </div>
-    </div>
+    </FilterPanel>
 
     <!-- Grid view -->
     <template v-if="viewMode === 'grid'">
@@ -330,7 +331,7 @@ const duplicateMutation = useMutation({
               />
             </div>
             <div
-              class="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/60 opacity-0 transition-opacity group-hover:opacity-100"
+              class="absolute inset-0 flex items-center justify-center gap-2 bg-slate-950/60 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100"
               @click.stop
             >
               <PermissionGate module="products" action="edit">

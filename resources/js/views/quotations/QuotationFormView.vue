@@ -88,6 +88,7 @@ const emptyItem = (): QuotationItemForm => ({
   rate: 0,
   quantity: 1,
   discount_rate: 0,
+  is_tax_included: false,
 })
 
 const schema = yup.object({
@@ -208,6 +209,7 @@ const totals = computed(() => calculateQuotationTotals(
     rate: Number(item.rate) || 0,
     qty: Number(item.quantity) || 0,
     discountRate: Number(item.discount_rate) || 0,
+    isTaxIncluded: Boolean(item.is_tax_included),
   })),
   effectiveVatRate.value,
 ))
@@ -285,6 +287,7 @@ watch(
         rate: Number(item.rate),
         quantity: Number(item.quantity),
         discount_rate: Number(item.discount_rate),
+        is_tax_included: Boolean(item.is_tax_included),
       }))
       : [emptyItem()]
 
@@ -352,13 +355,14 @@ function onProductSelected(index: number, fieldKey: string, product: ProductSear
     const nextProducts = new Map(selectedProducts.value)
     const nextRates = new Map(productRates.value)
     const nextEdited = new Set(rateManuallyEdited.value)
-    nextProducts.delete(fieldKey)
-    nextRates.delete(fieldKey)
-    nextEdited.delete(fieldKey)
+    nextProducts.delete(String(fieldKey))
+    nextRates.delete(String(fieldKey))
+    nextEdited.delete(String(fieldKey))
     selectedProducts.value = nextProducts
     productRates.value = nextRates
     rateManuallyEdited.value = nextEdited
     updateItemField(index, 'product_id', null)
+    updateItemField(index, 'is_tax_included', false)
     return
   }
 
@@ -379,6 +383,7 @@ function onProductSelected(index: number, fieldKey: string, product: ProductSear
     unit: product.unit?.code ?? product.unit?.name ?? 'pcs',
     rate: Number(product.rate),
     image_url: product.primary_image_url ?? null,
+    is_tax_included: Boolean(product.is_tax_included),
   })
 }
 
@@ -407,9 +412,9 @@ function removeLineItem(index: number) {
     const nextProducts = new Map(selectedProducts.value)
     const nextRates = new Map(productRates.value)
     const nextEdited = new Set(rateManuallyEdited.value)
-    nextProducts.delete(fieldKey)
-    nextRates.delete(fieldKey)
-    nextEdited.delete(fieldKey)
+    nextProducts.delete(String(fieldKey))
+    nextRates.delete(String(fieldKey))
+    nextEdited.delete(String(fieldKey))
     selectedProducts.value = nextProducts
     productRates.value = nextRates
     rateManuallyEdited.value = nextEdited
@@ -439,6 +444,7 @@ function buildPayload(formValues: typeof values, options?: { force?: boolean; as
       rate: Number(item.rate),
       quantity: Number(item.quantity),
       discount_rate: Number(item.discount_rate) || 0,
+      is_tax_included: Boolean(item.is_tax_included),
     })),
     ...(isEdit.value && lastModifiedAt.value && !options?.force
       ? { last_modified_at: lastModifiedAt.value }
@@ -757,8 +763,8 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="overflow-x-auto">
-        <div class="mb-3 hidden min-w-[960px] grid-cols-[32px_1.5fr_48px_2fr_80px_120px_80px_80px_100px_40px] gap-2 border-b pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid">
+        <div class="lg:overflow-x-auto">
+        <div class="mb-3 hidden grid-cols-[32px_1.5fr_48px_2fr_80px_120px_80px_80px_100px_40px] gap-2 border-b pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid lg:min-w-[960px]">
           <span />
           <span>Product</span>
           <span>Image</span>
@@ -771,7 +777,7 @@ onMounted(() => {
           <span />
         </div>
 
-        <div class="min-w-[960px] space-y-4">
+        <div class="space-y-4 lg:min-w-[960px]">
           <div
             v-for="(field, index) in itemFields"
             :key="field.key"
@@ -805,11 +811,11 @@ onMounted(() => {
                 <div class="lg:pt-1">
                   <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">Product *</span>
                   <AsyncCombobox
-                    :model-value="selectedProducts.get(field.key) ?? null"
+                    :model-value="selectedProducts.get(String(field.key)) ?? null"
                     placeholder="Search products…"
                     :load-options="loadProducts"
                     :render-option="(product) => product.title"
-                    @update:model-value="(product) => onProductSelected(index, field.key, product)"
+                    @update:model-value="(product) => onProductSelected(index, String(field.key), product)"
                   />
                 </div>
 
@@ -848,13 +854,13 @@ onMounted(() => {
                   <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">Rate *</span>
                   <CurrencyInput
                     :model-value="Number(field.value.rate) || 0"
-                    @update:model-value="(rate) => onRateChange(field.key, index, rate)"
+                    @update:model-value="(rate) => onRateChange(String(field.key), index, rate)"
                   />
                   <span
-                    v-if="showRateBadge(field.key)"
+                    v-if="showRateBadge(String(field.key))"
                     class="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900"
                   >
-                    Rate differs from product price ({{ formatCurrency(productRateFor(field.key)) }})
+                    Rate differs from product price ({{ formatCurrency(productRateFor(String(field.key))) }})
                   </span>
                   <ErrorMessage :name="`items.${index}.rate`" class="mt-1 block text-xs text-red-600" />
                 </div>
@@ -889,6 +895,12 @@ onMounted(() => {
                 <div class="text-right text-sm font-medium lg:pt-2">
                   <span class="mb-1 block text-xs text-slate-500 lg:hidden">Line Total</span>
                   {{ formatCurrency(lineTotal(field.value)) }}
+                  <span
+                    v-if="field.value.is_tax_included"
+                    class="mt-1 block text-xs font-normal text-slate-500"
+                  >
+                    Tax included
+                  </span>
                 </div>
 
                 <div class="flex justify-end lg:pt-1">

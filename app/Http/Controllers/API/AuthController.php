@@ -86,8 +86,12 @@ class AuthController extends Controller
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
-        $request->boolean('all_devices') ? $user->tokens()->delete() : $user->currentAccessToken()?->delete();
-        $user->increment('token_version');
+        if ($request->boolean('all_devices')) {
+            $user->tokens()->delete();
+            $user->increment('token_version');
+        } else {
+            $user->currentAccessToken()?->delete();
+        }
 
         $this->audit($request, $user, 'LOGOUT');
 
@@ -202,7 +206,7 @@ class AuthController extends Controller
 
     private function createToken(User $user, int $minutes): string
     {
-        $plainTextToken = $user->createToken('auth_token')->plainTextToken;
+        $plainTextToken = $user->createToken('auth_token', ['token_version:'.$user->token_version])->plainTextToken;
         [$id] = explode('|', $plainTextToken, 2);
         PersonalAccessToken::query()->whereKey($id)->update(['expires_at' => now()->addMinutes($minutes)]);
 

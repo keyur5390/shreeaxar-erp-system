@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://localhost:8000'
 
   return {
+    // Asset base path: /build/ only for production bundles served by Laravel.
+    // Dev server (npm run dev) must use / so routes like /dashboard work normally.
+    base: mode === 'production' ? '/build/' : '/',
     plugins: [vue()],
     resolve: { alias: { '@': path.resolve(__dirname, 'resources/js') } },
     server: {

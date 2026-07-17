@@ -16,6 +16,7 @@
     "barryvdh/laravel-debugbar": "^3.14",
     "fakerphp/faker": "^1.23",
     "laravel/pint": "^1.13",
+    "mockery/mockery": "^1.6",
     "phpunit/phpunit": "^11.0"
   },
   "autoload": {
@@ -33,6 +34,9 @@
   "scripts": {
     "serve": [
       "@php artisan serve --no-reload"
+    ],
+    "test": [
+      "@php vendor/bin/phpunit"
     ],
     "post-autoload-dump": [
       "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

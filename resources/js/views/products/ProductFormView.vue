@@ -75,6 +75,7 @@ const schema = yup.object({
   rate: yup.number().typeError('Rate is required.').required('Rate is required.').moreThan(0, 'Rate must be greater than 0.'),
   unit_id: yup.string().required('Unit is required.'),
   description: yup.string().nullable(),
+  is_tax_included: yup.boolean().default(false),
 })
 
 const { handleSubmit, resetForm, meta, values } = useForm({
@@ -85,6 +86,7 @@ const { handleSubmit, resetForm, meta, values } = useForm({
     rate: null as number | null,
     unit_id: '',
     description: '',
+    is_tax_included: false,
   },
 })
 
@@ -115,6 +117,7 @@ watch(
         rate: product.rate,
         unit_id: product.unit_id,
         description: product.description ?? '',
+        is_tax_included: product.is_tax_included ?? false,
       },
     })
 
@@ -306,6 +309,7 @@ const onSubmit = handleSubmit((formValues) => {
     rate: formValues.rate,
     unit_id: formValues.unit_id,
     description: formValues.description || null,
+    is_tax_included: formValues.is_tax_included ?? false,
     is_active: true,
   })
 })
@@ -370,6 +374,22 @@ onUnmounted(() => {
               />
             </Field>
             <ErrorMessage name="rate" class="mt-1 block text-xs text-red-600" />
+            <label class="mt-3 flex items-start gap-2">
+              <Field v-slot="{ field }" name="is_tax_included" type="checkbox" :value="true" :unchecked-value="false">
+                <input
+                  type="checkbox"
+                  class="mt-0.5 rounded border-slate-300"
+                  :checked="field.checked"
+                  @change="field.onChange"
+                />
+              </Field>
+              <span>
+                <span class="font-medium text-slate-700">Price includes tax</span>
+                <span class="mt-0.5 block text-xs text-slate-500">
+                  When enabled, VAT is not added on top of this product in quotations.
+                </span>
+              </span>
+            </label>
           </label>
 
           <label class="block text-sm">

@@ -156,66 +156,72 @@ function saveNew() {
 
     <div v-if="isLoading" class="rounded-lg border bg-white p-6 text-sm text-slate-500">Loading statuses…</div>
 
+    <div v-else-if="statusesQuery.isError.value" class="rounded-lg border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      Unable to load quotation statuses. Please refresh the page.
+    </div>
+
     <div v-else class="rounded-lg border bg-white shadow-card">
-      <draggable v-model="statuses" item-key="id" handle=".drag-handle" class="divide-y">
-        <template #item="{ element: status }">
-          <div class="flex items-center gap-3 px-4 py-3">
+      <draggable v-model="statuses" handle=".drag-handle" class="divide-y">
+        <div
+          v-for="status in statuses"
+          :key="status.id"
+          class="flex items-center gap-3 px-4 py-3"
+        >
+          <button
+            v-if="canEditStatuses"
+            type="button"
+            class="drag-handle cursor-grab text-slate-400 hover:text-slate-600 active:cursor-grabbing"
+          >
+            <GripVertical class="h-5 w-5" />
+          </button>
+          <span v-else class="w-5" />
+
+          <input
+            v-if="canEditStatuses"
+            type="color"
+            :value="status.color"
+            class="h-8 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
+            @change="onColorChange(status, $event)"
+          />
+          <span v-else class="inline-block h-8 w-8 rounded border" :style="{ backgroundColor: status.color }" />
+
+          <div class="min-w-0 flex-1">
+            <template v-if="!status.is_system && isEditing(status.id)">
+              <div :ref="(el) => setEditContainer(status.id, el as HTMLElement | null)">
+                <input
+                  :value="getValue(status.id)"
+                  type="text"
+                  class="w-full max-w-xs rounded border px-2 py-1 text-sm"
+                  @input="setValue(status.id, ($event.target as HTMLInputElement).value)"
+                  @keydown.enter.prevent="saveEdit(status.id)"
+                  @keydown.esc.prevent="cancelEdit(status.id)"
+                  @blur="saveEdit(status.id)"
+                />
+              </div>
+            </template>
             <button
-              v-if="canEditStatuses"
+              v-else
               type="button"
-              class="drag-handle cursor-grab text-slate-400 hover:text-slate-600 active:cursor-grabbing"
+              class="text-left text-sm font-medium text-slate-900"
+              :class="{ 'cursor-default': status.is_system }"
+              @click="!status.is_system && beginEdit(status)"
             >
-              <GripVertical class="h-5 w-5" />
-            </button>
-            <span v-else class="w-5" />
-
-            <input
-              v-if="canEditStatuses"
-              type="color"
-              :value="status.color"
-              class="h-8 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
-              @change="onColorChange(status, $event)"
-            />
-            <span v-else class="inline-block h-8 w-8 rounded border" :style="{ backgroundColor: status.color }" />
-
-            <div class="min-w-0 flex-1">
-              <template v-if="!status.is_system && isEditing(status.id)">
-                <div :ref="(el) => setEditContainer(status.id, el as HTMLElement | null)">
-                  <input
-                    :value="getValue(status.id)"
-                    type="text"
-                    class="w-full max-w-xs rounded border px-2 py-1 text-sm"
-                    @input="setValue(status.id, ($event.target as HTMLInputElement).value)"
-                    @keydown.enter.prevent="saveEdit(status.id)"
-                    @keydown.esc.prevent="cancelEdit(status.id)"
-                    @blur="saveEdit(status.id)"
-                  />
-                </div>
-              </template>
-              <button
-                v-else
-                type="button"
-                class="text-left text-sm font-medium text-slate-900"
-                :class="{ 'cursor-default': status.is_system }"
-                @click="!status.is_system && beginEdit(status)"
-              >
-                {{ status.name }}
-              </button>
-            </div>
-
-            <span v-if="status.is_system" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">System</span>
-            <span class="text-xs text-slate-500">{{ status.quotations_count ?? 0 }}</span>
-
-            <button
-              v-if="!status.is_system && canDeleteStatuses"
-              type="button"
-              class="rounded p-1 text-slate-500 hover:bg-red-100 hover:text-red-700"
-              @click="deleteTarget = status"
-            >
-              <Trash2 class="h-4 w-4" />
+              {{ status.name }}
             </button>
           </div>
-        </template>
+
+          <span v-if="status.is_system" class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">System</span>
+          <span class="text-xs text-slate-500">{{ status.quotations_count ?? 0 }}</span>
+
+          <button
+            v-if="!status.is_system && canDeleteStatuses"
+            type="button"
+            class="rounded p-1 text-slate-500 hover:bg-red-100 hover:text-red-700"
+            @click="deleteTarget = status"
+          >
+            <Trash2 class="h-4 w-4" />
+          </button>
+        </div>
       </draggable>
 
       <div v-if="canCreateStatuses" class="border-t p-4">

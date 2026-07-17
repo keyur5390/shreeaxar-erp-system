@@ -96,7 +96,7 @@ const emptyAddress = (): UserFormAddress => ({
   postal_code: '',
 })
 
-const { handleSubmit, resetForm, meta, values, setFieldValue } = useForm({
+const { handleSubmit, resetForm, meta, values, setFieldValue: setFieldValueTyped } = useForm({
   validationSchema: schema,
   initialValues: {
     first_name: '',
@@ -110,6 +110,8 @@ const { handleSubmit, resetForm, meta, values, setFieldValue } = useForm({
     addresses: [emptyAddress()],
   },
 })
+
+const setFieldValue = setFieldValueTyped as (field: string, value: unknown) => void
 
 const { fields: addressFields, push: pushAddress, remove: removeAddress } = useFieldArray<UserFormAddress>('addresses')
 
@@ -203,7 +205,7 @@ watch(
       if (countryId && prevIds?.[index] !== countryId) {
         await loadStates(countryId)
         if (prevIds?.[index] && prevIds[index] !== countryId) {
-          setFieldValue(`addresses.${index}.state_id`, '')
+          setFieldValue(`addresses[${index}].state_id`, undefined)
         }
       }
     })
@@ -228,7 +230,7 @@ watch(
 )
 
 function onCountryChange(index: number, countryId: string) {
-  setFieldValue(`addresses.${index}.state_id`, '')
+  setFieldValue(`addresses[${index}].state_id`, undefined)
   if (countryId) loadStates(countryId)
 }
 

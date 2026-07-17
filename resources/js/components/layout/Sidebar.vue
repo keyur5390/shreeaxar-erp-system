@@ -9,6 +9,7 @@ import {
 import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
 import { useQuotationSidebarCounts } from '@/composables/useQuotationSidebarCounts'
+import BrandLogo from '@/components/common/BrandLogo.vue'
 
 defineOptions({ name: 'Sidebar' })
 
@@ -67,7 +68,12 @@ const navItems: NavItem[] = [
       { label: 'Create Quotation', to: '/quotations/new', module: 'quotations', button: true },
     ],
   },
-  { label: 'Settings', to: '/settings/audit-log', icon: Cog, superAdminOnly: true },
+  {
+    label: 'SETTINGS', icon: Cog, superAdminOnly: true, children: [
+      { label: 'Portal Settings', to: '/settings', exact: true },
+      { label: 'Audit Log', to: '/settings/audit-log' },
+    ],
+  },
   { label: 'My Account', to: '/account', icon: UserCircle },
 ]
 
@@ -88,6 +94,7 @@ const activeFlyoutItem = computed(() =>
 const groupPathPrefixes: Record<string, string> = {
   masters: '/masters',
   quotations: '/quotations',
+  settings: '/settings',
 }
 
 function isChildRouteActive(item: NavItem): boolean {
@@ -164,42 +171,61 @@ const sidebarWidthClass = computed(() =>
 )
 
 const navItemClass = (active: boolean) => [
-  active ? 'bg-white/15 text-white' : 'text-white/90 hover:bg-white/10',
-  uiStore.sidebarCollapsed ? 'lg:justify-center lg:px-2' : '',
+  active
+    ? 'border-l-[3px] border-white bg-white/25 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)]'
+    : 'border-l-[3px] border-transparent text-white/75 hover:border-white/30 hover:bg-white/10 hover:text-white',
+  'pr-3',
+  uiStore.sidebarCollapsed ? 'lg:justify-center lg:border-l-0 lg:px-2 lg:pl-2' : 'pl-[9px]',
+  uiStore.sidebarCollapsed && active ? 'lg:bg-white/25 lg:ring-1 lg:ring-inset lg:ring-white/25' : '',
 ]
+
+const childNavClass = (active: boolean, isButton = false) => {
+  if (isButton) {
+    return 'mt-2 border border-white/30 bg-white/10 font-medium text-white hover:bg-white/15'
+  }
+  return active
+    ? 'border-l-[3px] border-white bg-white/25 font-medium text-white'
+    : 'border-l-[3px] border-transparent text-white/75 hover:border-white/30 hover:bg-white/10 hover:text-white'
+}
 </script>
 
 <template>
   <div v-if="uiStore.sidebarOpen" class="fixed inset-0 z-40 bg-slate-950/40 lg:hidden" @click="closeMobile" />
   <aside
     ref="sidebarRef"
-    class="fixed inset-y-0 left-0 z-50 flex -translate-x-full flex-col bg-[#1F4E79] text-white shadow-2xl transition-all duration-200 lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-50 flex -translate-x-full flex-col border-r border-brand-teal-dark bg-brand-teal text-white transition-all duration-200 lg:translate-x-0"
     :class="[sidebarWidthClass, { 'translate-x-0': uiStore.sidebarOpen }]"
   >
     <div
-      class="flex h-16 shrink-0 items-center justify-between px-5"
-      :class="{ 'lg:justify-center lg:px-2': uiStore.sidebarCollapsed }"
+      class="logo-stripe relative shrink-0 border-b border-white/10 bg-brand-teal px-3 py-3"
+      :class="{ 'lg:px-2 lg:py-2.5': uiStore.sidebarCollapsed }"
     >
       <RouterLink
         to="/dashboard"
-        class="flex min-w-0 items-center gap-3 font-bold"
-        :class="{ 'lg:justify-center': uiStore.sidebarCollapsed }"
+        class="flex min-w-0 items-center justify-center rounded-lg bg-black/20 px-2 py-1.5"
         @click="closeMobile"
       >
-        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15">SA</span>
-        <span class="truncate" :class="{ 'lg:hidden': uiStore.sidebarCollapsed }">Shree Axar ERP</span>
+        <BrandLogo :size="uiStore.sidebarCollapsed ? 'sm' : 'sidebar'" />
       </RouterLink>
-      <button class="rounded-lg p-1.5 hover:bg-white/10 lg:hidden" type="button" aria-label="Close sidebar" @click="closeMobile">
+      <button
+        class="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-white/80 hover:bg-white/10 hover:text-white lg:hidden"
+        type="button"
+        aria-label="Close sidebar"
+        @click="closeMobile"
+      >
         <X class="h-5 w-5" />
       </button>
     </div>
 
-    <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4" :class="{ 'lg:px-2': uiStore.sidebarCollapsed }">
+    <nav
+      class="sidebar-scroll flex-1 space-y-0.5 overflow-y-auto overscroll-contain px-2 py-3"
+      :class="{ 'lg:px-1.5': uiStore.sidebarCollapsed }"
+    >
       <template v-for="item in visibleNavItems" :key="item.label">
         <div v-if="item.children" class="relative">
           <button
             type="button"
-            class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold"
+            class="flex w-full items-center gap-3 rounded-lg py-2 pr-2 text-sm font-semibold transition-colors"
             :class="navItemClass(isActive(item))"
             :title="uiStore.sidebarCollapsed ? item.label : undefined"
             @click="onGroupClick(item, $event)"
@@ -217,14 +243,14 @@ const navItemClass = (active: boolean) => [
 
           <div
             v-show="!uiStore.sidebarCollapsed && uiStore.isGroupExpanded(item.label)"
-            class="ml-3 space-y-1 border-l border-white/15 pl-3"
+            class="ml-2 space-y-0.5 border-l border-white/20 pl-2"
           >
             <RouterLink
               v-for="child in item.children"
               :key="child.label"
               :to="child.to!"
-              class="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10"
-              :class="[{ 'bg-white/15 text-white': isChildRouteActive(child) }, child.button ? 'mt-2 bg-emerald-500 text-white hover:bg-emerald-400' : '']"
+              class="flex items-center justify-between rounded-md py-2 pl-2 pr-3 text-sm transition-colors"
+              :class="childNavClass(isChildRouteActive(child), Boolean(child.button))"
               @click="onNavClick"
             >
               <span>{{ child.label }}</span>
@@ -242,7 +268,7 @@ const navItemClass = (active: boolean) => [
         <RouterLink
           v-else
           :to="item.to!"
-          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold"
+          class="flex items-center gap-3 rounded-lg py-2 pr-2 text-sm font-semibold transition-colors"
           :class="navItemClass(isActive(item))"
           :title="uiStore.sidebarCollapsed ? item.label : undefined"
           @click="onNavClick"
@@ -253,42 +279,55 @@ const navItemClass = (active: boolean) => [
       </template>
     </nav>
 
-    <div class="shrink-0 border-t border-white/15 p-4" :class="{ 'lg:px-2 lg:py-3': uiStore.sidebarCollapsed }">
-      <button
-        type="button"
-        class="mb-3 hidden w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15 lg:flex"
-        :aria-label="uiStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        @click="uiStore.toggleSidebarCollapse()"
-      >
-        <PanelLeftClose v-if="!uiStore.sidebarCollapsed" class="h-4 w-4 shrink-0" />
-        <PanelLeftOpen v-else class="h-4 w-4 shrink-0" />
-        <span :class="{ 'lg:hidden': uiStore.sidebarCollapsed }">
-          {{ uiStore.sidebarCollapsed ? 'Expand menu' : 'Collapse menu' }}
-        </span>
-      </button>
-
+    <div
+      class="shrink-0 border-t border-white/10 px-2 py-2"
+      :class="{ 'lg:px-1.5 lg:py-2': uiStore.sidebarCollapsed }"
+    >
       <div
-        class="mb-3 flex items-center gap-3"
-        :class="{ 'lg:justify-center': uiStore.sidebarCollapsed }"
+        class="flex items-center gap-1.5"
+        :class="{ 'lg:flex-col lg:gap-2': uiStore.sidebarCollapsed }"
       >
-        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20 text-sm font-bold">
-          {{ authStore.initials }}
-        </div>
-        <div class="min-w-0" :class="{ 'lg:hidden': uiStore.sidebarCollapsed }">
-          <p class="truncate text-sm font-semibold">{{ authStore.fullName }}</p>
-          <p class="truncate text-xs text-white/70">{{ authStore.roleName }}</p>
+        <RouterLink
+          to="/account"
+          class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-0.5 hover:bg-white/10"
+          :class="{ 'lg:w-full lg:justify-center lg:px-0': uiStore.sidebarCollapsed }"
+          :title="uiStore.sidebarCollapsed ? `${authStore.fullName} · ${authStore.roleName}` : undefined"
+          @click="closeMobile"
+        >
+          <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/20 text-[11px] font-bold">
+            {{ authStore.initials }}
+          </div>
+          <div class="min-w-0 flex-1" :class="{ 'lg:hidden': uiStore.sidebarCollapsed }">
+            <p class="truncate text-xs font-semibold leading-4">{{ authStore.fullName }}</p>
+            <p class="truncate text-[10px] leading-3 text-white/60">{{ authStore.roleName }}</p>
+          </div>
+        </RouterLink>
+
+        <div
+          class="flex shrink-0 items-center gap-0.5"
+          :class="{ 'lg:w-full lg:justify-center': uiStore.sidebarCollapsed }"
+        >
+          <button
+            type="button"
+            class="hidden rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white lg:inline-flex"
+            :aria-label="uiStore.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            :title="uiStore.sidebarCollapsed ? 'Expand menu' : 'Collapse menu'"
+            @click="uiStore.toggleSidebarCollapse()"
+          >
+            <PanelLeftClose v-if="!uiStore.sidebarCollapsed" class="h-4 w-4" />
+            <PanelLeftOpen v-else class="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            class="rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
+            aria-label="Logout"
+            title="Logout"
+            @click="logout"
+          >
+            <LogOut class="h-4 w-4" />
+          </button>
         </div>
       </div>
-
-      <button
-        class="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold hover:bg-white/15"
-        type="button"
-        :title="uiStore.sidebarCollapsed ? 'Logout' : undefined"
-        @click="logout"
-      >
-        <LogOut class="h-4 w-4 shrink-0" />
-        <span :class="{ 'lg:hidden': uiStore.sidebarCollapsed }">Logout</span>
-      </button>
     </div>
   </aside>
 
@@ -296,7 +335,7 @@ const navItemClass = (active: boolean) => [
     <div
       v-if="uiStore.sidebarCollapsed && activeFlyoutItem?.children?.length"
       ref="flyoutPanelRef"
-      class="fixed z-[60] hidden min-w-[240px] rounded-xl border border-white/10 bg-[#1F4E79] p-2 text-white shadow-2xl lg:block"
+      class="sidebar-scroll fixed z-[60] hidden max-h-[min(70vh,32rem)] min-w-[240px] overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-brand-teal p-2 text-white lg:block"
       :style="{ top: `${flyoutTop}px`, left: '80px' }"
     >
       <p class="px-3 py-2 text-xs font-bold uppercase tracking-wide text-white/60">{{ activeFlyoutItem.label }}</p>
@@ -304,8 +343,8 @@ const navItemClass = (active: boolean) => [
         v-for="child in activeFlyoutItem.children"
         :key="child.label"
         :to="child.to!"
-        class="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-white/85 hover:bg-white/10"
-        :class="[{ 'bg-white/15 text-white': isChildRouteActive(child) }, child.button ? 'mt-2 bg-emerald-500 text-white hover:bg-emerald-400' : '']"
+        class="flex items-center justify-between rounded-md py-2 pl-2 pr-3 text-sm transition-colors"
+        :class="childNavClass(isChildRouteActive(child), Boolean(child.button))"
         @click="onNavClick"
       >
         <span>{{ child.label }}</span>

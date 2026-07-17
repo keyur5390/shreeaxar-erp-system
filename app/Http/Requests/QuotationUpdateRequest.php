@@ -32,6 +32,7 @@ class QuotationUpdateRequest extends FormRequest
             'items.*.rate' => ['required', 'numeric', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.discount_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items.*.is_tax_included' => ['sometimes', 'boolean'],
         ];
     }
 

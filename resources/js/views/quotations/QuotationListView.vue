@@ -15,6 +15,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import PermissionGate from '@/components/ui/PermissionGate.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import FilterPanel from '@/components/ui/FilterPanel.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import ExpiryBadge from '@/components/ui/ExpiryBadge.vue'
 import VTooltip from '@/components/ui/VTooltip.vue'
@@ -180,7 +181,7 @@ const duplicateMutation = useMutation({
             Total Value: <span class="font-semibold">{{ formatCurrency(summaryTotalValue) }}</span>
           </div>
 
-          <div class="rounded-lg border bg-white p-4 shadow-card">
+          <FilterPanel :has-active-filters="hasActiveFilters">
             <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
               <label class="block text-sm lg:col-span-2">
                 <span class="mb-1 block font-medium text-slate-700">Search</span>
@@ -264,7 +265,7 @@ const duplicateMutation = useMutation({
                 </button>
               </div>
             </div>
-          </div>
+          </FilterPanel>
         </div>
       </template>
 

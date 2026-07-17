@@ -16,6 +16,7 @@ import {
   Tooltip,
   type ChartOptions,
   type Plugin,
+  type ChartData,
 } from 'chart.js'
 import {
   AlertTriangle,
@@ -33,7 +34,8 @@ import type { DashboardByStatus, DashboardTrendMonth, RecentActivityItem } from 
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, Legend, LinearScale, LineElement, PointElement, Tooltip)
 
-const BRAND_BLUE = '#1F4E79'
+const BRAND_BLUE = '#1B5275'
+const BRAND_PURPLE = '#7A1B5D'
 const GRAY_LINE = '#94a3b8'
 const currentYear = new Date().getFullYear()
 const selectedYear = ref(currentYear)
@@ -140,8 +142,8 @@ const barChartData = computed(() => ({
       type: 'line' as const,
       label: 'Revenue',
       data: trendData.value.map((row) => row.total_value),
-      borderColor: GRAY_LINE,
-      backgroundColor: GRAY_LINE,
+      borderColor: BRAND_PURPLE,
+      backgroundColor: BRAND_PURPLE,
       pointRadius: 3,
       tension: 0.3,
       yAxisID: 'y1',
@@ -355,7 +357,7 @@ const ActivityItem = defineComponent({
           <div class="h-72">
             <Bar
               v-if="trendData.some((row) => row.count > 0 || row.total_value > 0)"
-              :data="barChartData"
+              :data="barChartData as ChartData<'bar'>"
               :options="barChartOptions"
             />
             <p v-else class="grid h-full place-items-center text-sm text-slate-500">No trend data for {{ selectedYear }}.</p>

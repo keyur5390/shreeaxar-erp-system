@@ -32,14 +32,14 @@ const activeTab = ref<'profile' | 'addresses' | 'permissions' | 'password'>('pro
 const deleteOpen = ref(false)
 const optimisticActive = ref<boolean | null>(null)
 
-const tabs = computed(() => {
-  const base = [
-    { id: 'profile' as const, label: 'Profile Info' },
-    { id: 'addresses' as const, label: 'Addresses' },
-    { id: 'permissions' as const, label: 'Permissions' },
+const tabs = computed<Array<{ id: 'profile' | 'addresses' | 'permissions' | 'password'; label: string }>>(() => {
+  const base: Array<{ id: 'profile' | 'addresses' | 'permissions' | 'password'; label: string }> = [
+    { id: 'profile', label: 'Profile Info' },
+    { id: 'addresses', label: 'Addresses' },
+    { id: 'permissions', label: 'Permissions' },
   ]
   if (isOwnProfile.value) {
-    base.push({ id: 'password' as const, label: 'Change Password' })
+    base.push({ id: 'password', label: 'Change Password' })
   }
   return base
 })
@@ -202,7 +202,7 @@ function permissionRowClass(row: ModulePermissionMatrix) {
           <h2 class="text-xl font-semibold text-slate-900">{{ fullName }}</h2>
           <p class="text-sm text-slate-500">{{ user.email }}</p>
           <div class="mt-2 flex flex-wrap gap-2">
-            <StatusBadge :label="roleName" color="#1F4E79" size="sm" />
+            <StatusBadge :label="roleName" color="#1B5275" size="sm" />
             <StatusBadge :label="departmentName" color="#6366f1" size="sm" />
             <StatusBadge
               :label="isActive ? 'Active' : 'Inactive'"
