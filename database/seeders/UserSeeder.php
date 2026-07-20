@@ -11,7 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $plainPassword = 'admin@private';
+        $plainPassword = 'admin@shreeaxar';
 
         $user = User::updateOrCreate(
             ['email' => 'admin@shreeaxar.com'],
