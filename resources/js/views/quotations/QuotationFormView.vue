@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useForm, useFieldArray, ErrorMessage } from 'vee-validate'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
@@ -15,6 +15,7 @@ import { quotationStatusesService } from '@/services/quotation-statuses.service'
 import { customersService } from '@/services/customers.service'
 import { productsService } from '@/services/products.service'
 import { bankDetailsService } from '@/services/bank-details.service'
+import { termsAndConditionsService } from '@/services/terms-and-conditions.service'
 import { taxesService } from '@/services/taxes.service'
 import { settingsService } from '@/services/settings.service'
 import { useAuthStore } from '@/stores/auth.store'
@@ -25,8 +26,9 @@ import { ValidationError } from '@/services/api'
 import { calculateLineTotal, calculateQuotationTotals } from '@/utils/quotationCalc'
 import { convertCurrencyAmount } from '@/utils/currency'
 import { useCurrencies } from '@/composables/useCurrencies'
-import { formatCurrency } from '@/utils/formatters'
-import type { CustomerSearchResult, ProductSearchResult, QuotationItemForm } from '@/types'
+import { formatAmount, formatCurrency } from '@/utils/formatters'
+import { amountInWords } from '@/utils/amountInWords'
+import type { CustomerSearchResult, ProductSearchResult, QuotationDetail, QuotationItemForm } from '@/types'
 
 const DRAFT_STORAGE_KEY = 'quotation_draft_new'
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000
@@ -45,6 +47,7 @@ const isEdit = computed(() => Boolean(quotationId.value))
 
 const submitError = ref('')
 const expiryInlineError = ref('')
+const selectedTermsTemplateId = ref('')
 const selectedCustomer = ref<CustomerSearchResult | null>(null)
 const lastModifiedAt = ref<string | null>(null)
 const quickCreateOpen = ref(false)
@@ -60,11 +63,25 @@ const draftSavedAt = ref<string | null>(null)
 const saveMode = ref<'draft' | 'quotation'>('quotation')
 
 const rateManuallyEdited = ref(new Set<string>())
-const productRates = ref(new Map<string, number>())
-const selectedProducts = ref(new Map<string, ProductSearchResult>())
+const productRates = ref<Record<string, number>>({})
+const selectedProducts = ref<Record<string, ProductSearchResult>>({})
+const pendingProductHydration = ref<QuotationDetail | null>(null)
+const hydratingQuotation = ref(false)
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+function toDateInputValue(value: string | null | undefined): string {
+  if (!value) return ''
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (match) return match[1]
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function addDaysIso(days: number): string {
@@ -108,6 +125,7 @@ const schema = yup.object({
     }),
   authorized_by_id: yup.string().required('Authorized by is required.'),
   bank_detail_id: yup.string().nullable(),
+  exclude_vat: yup.boolean().default(false),
   terms_conditions: yup.string().nullable(),
   notes: yup.string().nullable(),
   items: yup.array().of(
@@ -141,6 +159,7 @@ const {
     expiry_date: addDaysIso(defaultExpiryDays()),
     authorized_by_id: authStore.user?.id ?? '',
     bank_detail_id: '',
+    exclude_vat: false,
     terms_conditions: '',
     notes: '',
     items: [emptyItem()],
@@ -152,6 +171,7 @@ const [currencyId] = defineField('currency_id')
 const [quotationDate] = defineField('quotation_date')
 const [expiryDate] = defineField('expiry_date')
 const [bankDetailId] = defineField('bank_detail_id')
+const [excludeVat] = defineField('exclude_vat')
 const [termsConditions] = defineField('terms_conditions')
 const [notes] = defineField('notes')
 
@@ -186,6 +206,12 @@ const banksQuery = useQuery({
   staleTime: STALE_TIME.masters,
 })
 
+const termsTemplatesQuery = useQuery({
+  queryKey: ['terms-and-conditions'],
+  queryFn: () => termsAndConditionsService.list(),
+  staleTime: STALE_TIME.masters,
+})
+
 const taxesQuery = useQuery({
   queryKey: ['taxes'],
   queryFn: () => taxesService.list(),
@@ -200,6 +226,7 @@ const settingsQuery = useQuery({
 
 const statuses = computed(() => statusesQuery.data.value ?? [])
 const banks = computed(() => banksQuery.data.value ?? [])
+const termsTemplates = computed(() => termsTemplatesQuery.data.value ?? [])
 const draftedStatusId = computed(() => statuses.value.find((status) => status.name === 'Drafted')?.id ?? '')
 
 const quotationCurrency = computed(() =>
@@ -218,6 +245,7 @@ watch(
 )
 
 const effectiveVatRate = computed(() => {
+  if (excludeVat.value) return 0
   if (isEdit.value && quotationQuery.data.value?.vat_rate !== undefined) {
     return quotationQuery.data.value.vat_rate
   }
@@ -239,6 +267,15 @@ const totals = computed(() => calculateQuotationTotals(
 const hasItemErrors = computed(() =>
   Object.keys(errors.value).some((key) => key.startsWith('items')),
 )
+
+const totalInWords = computed(() => {
+  if (!quotationCurrency.value) return ''
+  return amountInWords(
+    totals.value.total,
+    quotationCurrency.value.code,
+    quotationCurrency.value.decimal_places ?? 0,
+  )
+})
 
 watch(
   () => settingsQuery.data.value,
@@ -269,8 +306,27 @@ watch(
   },
 )
 
+watch(
+  () => termsTemplatesQuery.data.value,
+  (templateList) => {
+    if (isEdit.value || termsConditions.value || !templateList?.length) return
+    const defaultTemplate = templateList.find((template) => template.is_default)
+    if (defaultTemplate) {
+      selectedTermsTemplateId.value = defaultTemplate.id
+      setFieldValue('terms_conditions', defaultTemplate.content)
+    }
+  },
+)
+
+function onTermsTemplateSelect(templateId: string) {
+  selectedTermsTemplateId.value = templateId
+  if (!templateId) return
+  const template = termsTemplates.value.find((item) => item.id === templateId)
+  if (template) setFieldValue('terms_conditions', template.content)
+}
+
 watch(quotationDate, (newDate, oldDate) => {
-  if (!newDate || newDate === oldDate) return
+  if (hydratingQuotation.value || !newDate || newDate === oldDate) return
   if (expiryDate.value && new Date(expiryDate.value) <= new Date(newDate)) {
     setFieldValue('expiry_date', '')
     expiryInlineError.value = 'Expiry date must be after quotation date. Please select a new expiry date.'
@@ -286,10 +342,83 @@ watch(expiryDate, (value) => {
   }
 })
 
+function buildSelectedProductFromItem(
+  item: QuotationDetail['items'][number],
+  quotation: QuotationDetail,
+): ProductSearchResult {
+  return {
+    id: item.product_id!,
+    title: item.product?.title ?? item.description,
+    model_number: null,
+    rate: Number(item.rate),
+    currency_id: quotation.currency_id,
+    currency: quotation.currency
+      ? {
+        id: quotation.currency.id,
+        code: quotation.currency.code,
+        symbol: quotation.currency.symbol,
+        decimal_places: quotation.currency.decimal_places,
+        exchange_rate: quotation.currency_snapshot?.exchange_rate ?? 1,
+      }
+      : null,
+    is_tax_included: item.is_tax_included,
+    unit: item.unit ? { code: item.unit, name: item.unit } : null,
+    primary_image_url: item.image_url ?? item.product?.primary_image_url ?? null,
+    is_active: true,
+  }
+}
+
+function hydrateSelectedProducts(quotation: QuotationDetail): void {
+  const nextProducts: Record<string, ProductSearchResult> = {}
+  const nextRates: Record<string, number> = {}
+
+  quotation.items.forEach((item, index) => {
+    if (!item.product_id) return
+    const fieldKey = itemFields.value[index]?.key
+    if (!fieldKey) return
+
+    nextProducts[String(fieldKey)] = buildSelectedProductFromItem(item, quotation)
+    nextRates[String(fieldKey)] = Number(item.rate)
+  })
+
+  selectedProducts.value = nextProducts
+  productRates.value = nextRates
+}
+
+function productForCombobox(fieldKey: string, index: number): ProductSearchResult | null {
+  const selected = selectedProducts.value[fieldKey]
+  if (selected) return selected
+
+  const item = lineItemAt(index)
+  if (!item.product_id) return null
+
+  return {
+    id: item.product_id,
+    title: item.description,
+    model_number: null,
+    rate: Number(item.rate),
+    currency_id: values.currency_id,
+    currency: quotationCurrency.value
+      ? {
+        id: quotationCurrency.value.id,
+        code: quotationCurrency.value.code,
+        symbol: quotationCurrency.value.symbol,
+        decimal_places: quotationCurrency.value.decimal_places,
+        exchange_rate: quotationCurrency.value.exchange_rate ?? 1,
+      }
+      : null,
+    is_tax_included: Boolean(item.is_tax_included),
+    unit: item.unit ? { code: item.unit, name: item.unit } : null,
+    primary_image_url: item.image_url ?? null,
+    is_active: true,
+  }
+}
+
 watch(
   () => quotationQuery.data.value,
-  (quotation) => {
+  async (quotation) => {
     if (!quotation) return
+    hydratingQuotation.value = true
     lastModifiedAt.value = quotation.last_modified_at ?? null
     selectedCustomer.value = quotation.customer ? {
       id: quotation.customer.id,
@@ -318,10 +447,11 @@ watch(
         customer_id: quotation.customer_id,
         currency_id: quotation.currency_id,
         status_id: quotation.status_id,
-        quotation_date: quotation.quotation_date,
-        expiry_date: quotation.expiry_date,
+        quotation_date: toDateInputValue(quotation.quotation_date),
+        expiry_date: toDateInputValue(quotation.expiry_date),
         authorized_by_id: quotation.authorized_by_id,
         bank_detail_id: quotation.bank_detail_id ?? '',
+        exclude_vat: quotation.exclude_vat ?? false,
         terms_conditions: quotation.terms_conditions ?? '',
         notes: quotation.notes ?? '',
         items,
@@ -329,10 +459,32 @@ watch(
     })
 
     rateManuallyEdited.value = new Set()
-    productRates.value = new Map()
-    selectedProducts.value = new Map()
+    productRates.value = {}
+    selectedProducts.value = {}
+    pendingProductHydration.value = quotation
+
+    await nextTick()
+    hydrateSelectedProducts(quotation)
+    await nextTick()
+    hydrateSelectedProducts(quotation)
+    hydratingQuotation.value = false
   },
   { immediate: true },
+)
+
+watch(
+  itemFields,
+  () => {
+    if (!pendingProductHydration.value) return
+    hydrateSelectedProducts(pendingProductHydration.value)
+
+    const expectedCount = pendingProductHydration.value.items.filter((item) => item.product_id).length
+    const actualCount = Object.keys(selectedProducts.value).length
+    if (expectedCount === 0 || actualCount >= expectedCount) {
+      pendingProductHydration.value = null
+    }
+  },
+  { deep: true },
 )
 
 async function loadCustomers(query: string, signal: AbortSignal): Promise<CustomerSearchResult[]> {
@@ -375,11 +527,11 @@ function lineItemAt(index: number): QuotationItemForm {
 
 function onProductSelected(index: number, fieldKey: string, product: ProductSearchResult | null) {
   if (!product) {
-    const nextProducts = new Map(selectedProducts.value)
-    const nextRates = new Map(productRates.value)
+    const nextProducts = { ...selectedProducts.value }
+    const nextRates = { ...productRates.value }
     const nextEdited = new Set(rateManuallyEdited.value)
-    nextProducts.delete(String(fieldKey))
-    nextRates.delete(String(fieldKey))
+    delete nextProducts[String(fieldKey)]
+    delete nextRates[String(fieldKey)]
     nextEdited.delete(String(fieldKey))
     selectedProducts.value = nextProducts
     productRates.value = nextRates
@@ -389,11 +541,9 @@ function onProductSelected(index: number, fieldKey: string, product: ProductSear
     return
   }
 
-  const nextProducts = new Map(selectedProducts.value)
-  const nextRates = new Map(productRates.value)
+  const nextProducts = { ...selectedProducts.value, [fieldKey]: product }
+  const nextRates = { ...productRates.value, [fieldKey]: Number(product.rate) }
   const nextEdited = new Set(rateManuallyEdited.value)
-  nextProducts.set(fieldKey, product)
-  nextRates.set(fieldKey, Number(product.rate))
   nextEdited.delete(fieldKey)
   selectedProducts.value = nextProducts
   productRates.value = nextRates
@@ -424,21 +574,51 @@ function lineTotal(item: QuotationItemForm): number {
 }
 
 function showRateBadge(fieldKey: string): boolean {
-  return rateManuallyEdited.value.has(fieldKey) && productRates.value.has(fieldKey)
+  return rateManuallyEdited.value.has(fieldKey) && fieldKey in productRates.value
 }
 
 function productRateFor(fieldKey: string): number {
-  return productRates.value.get(fieldKey) ?? 0
+  return productRates.value[fieldKey] ?? 0
 }
+
+function productCurrencyHint(fieldKey: string): string | null {
+  const product = selectedProducts.value[fieldKey]
+  if (!product?.currency || !quotationCurrency.value) return null
+  if (product.currency.id === quotationCurrency.value.id) return null
+  return `Converted from ${product.currency.code} ${formatCurrency(Number(product.rate), product.currency)} at exchange rate`
+}
+
+watch(currencyId, (newCurrencyId, oldCurrencyId) => {
+  if (!newCurrencyId || newCurrencyId === oldCurrencyId) return
+  const newCurrency = findCurrency(newCurrencyId)
+  if (!newCurrency) return
+
+  const nextRates = { ...productRates.value }
+
+  itemFields.value.forEach((field, index) => {
+    const fieldKey = String(field.key)
+    const product = selectedProducts.value[fieldKey]
+    if (!product || rateManuallyEdited.value.has(fieldKey)) return
+
+    const convertedRate = product.currency
+      ? convertCurrencyAmount(Number(product.rate), product.currency, newCurrency)
+      : Number(product.rate)
+
+    updateItemField(index, 'rate', convertedRate)
+    nextRates[fieldKey] = convertedRate
+  })
+
+  productRates.value = nextRates
+})
 
 function removeLineItem(index: number) {
   const fieldKey = itemFields.value[index]?.key
   if (fieldKey) {
-    const nextProducts = new Map(selectedProducts.value)
-    const nextRates = new Map(productRates.value)
+    const nextProducts = { ...selectedProducts.value }
+    const nextRates = { ...productRates.value }
     const nextEdited = new Set(rateManuallyEdited.value)
-    nextProducts.delete(String(fieldKey))
-    nextRates.delete(String(fieldKey))
+    delete nextProducts[String(fieldKey)]
+    delete nextRates[String(fieldKey)]
     nextEdited.delete(String(fieldKey))
     selectedProducts.value = nextProducts
     productRates.value = nextRates
@@ -459,6 +639,7 @@ function buildPayload(formValues: typeof values, options?: { force?: boolean; as
     expiry_date: formValues.expiry_date,
     authorized_by_id: formValues.authorized_by_id,
     bank_detail_id: formValues.bank_detail_id || null,
+    exclude_vat: Boolean(formValues.exclude_vat),
     ...(isEdit.value ? {} : { currency_id: formValues.currency_id }),
     terms_conditions: formValues.terms_conditions || null,
     notes: formValues.notes || null,
@@ -811,10 +992,10 @@ onMounted(() => {
           <span>Image</span>
           <span>Description</span>
           <span>Unit</span>
-          <span>Rate</span>
+          <span>Rate ({{ quotationCurrency?.code ?? 'RWF' }})</span>
           <span>Qty</span>
           <span>Disc%</span>
-          <span class="text-right">Line Total</span>
+          <span class="text-right">Total ({{ quotationCurrency?.code ?? 'RWF' }})</span>
           <span />
         </div>
 
@@ -852,7 +1033,7 @@ onMounted(() => {
                 <div class="lg:pt-1">
                   <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">Product *</span>
                   <AsyncCombobox
-                    :model-value="selectedProducts.get(String(field.key)) ?? null"
+                    :model-value="productForCombobox(String(field.key), index)"
                     placeholder="Search products…"
                     :load-options="loadProducts"
                     :render-option="(product) => product.title"
@@ -892,7 +1073,9 @@ onMounted(() => {
                 </label>
 
                 <div>
-                  <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">Rate *</span>
+                  <span class="mb-1 block text-xs font-medium text-slate-600 lg:hidden">
+                    Rate ({{ quotationCurrency?.code ?? 'RWF' }}) *
+                  </span>
                   <CurrencyInput
                     :model-value="Number(field.value.rate) || 0"
                     :currency="quotationCurrency"
@@ -903,6 +1086,12 @@ onMounted(() => {
                     class="mt-1 inline-block rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900"
                   >
                     Rate differs from product price ({{ formatCurrency(productRateFor(String(field.key)), quotationCurrency) }})
+                  </span>
+                  <span
+                    v-else-if="productCurrencyHint(String(field.key))"
+                    class="mt-1 block text-xs text-slate-500"
+                  >
+                    {{ productCurrencyHint(String(field.key)) }}
                   </span>
                   <ErrorMessage :name="`items.${index}.rate`" class="mt-1 block text-xs text-red-600" />
                 </div>
@@ -934,9 +1123,11 @@ onMounted(() => {
                   <ErrorMessage :name="`items.${index}.discount_rate`" class="mt-1 block text-xs text-red-600" />
                 </label>
 
-                <div class="text-right text-sm font-medium lg:pt-2">
-                  <span class="mb-1 block text-xs text-slate-500 lg:hidden">Line Total</span>
-                  {{ formatCurrency(lineTotal(field.value), quotationCurrency) }}
+                <div class="text-right text-sm font-medium tabular-nums lg:pt-2">
+                  <span class="mb-1 block text-xs text-slate-500 lg:hidden">
+                    Total ({{ quotationCurrency?.code ?? 'RWF' }})
+                  </span>
+                  {{ formatAmount(lineTotal(field.value), quotationCurrency) }}
                   <span
                     v-if="field.value.is_tax_included"
                     class="mt-1 block text-xs font-normal text-slate-500"
@@ -966,6 +1157,19 @@ onMounted(() => {
       <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div class="space-y-4 rounded-lg border bg-white p-6 shadow-card">
           <label class="block text-sm">
+            <span class="mb-1 block font-medium text-slate-700">Terms Template</span>
+            <select
+              :value="selectedTermsTemplateId"
+              class="w-full rounded-md border px-3 py-2"
+              @change="onTermsTemplateSelect(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">Select a template (optional)</option>
+              <option v-for="template in termsTemplates" :key="template.id" :value="template.id">
+                {{ template.name }}<template v-if="template.is_default"> (Default)</template>
+              </option>
+            </select>
+          </label>
+          <label class="block text-sm">
             <span class="mb-1 block font-medium text-slate-700">Terms & Conditions</span>
             <textarea v-model="termsConditions" rows="4" class="w-full rounded-md border px-3 py-2" />
           </label>
@@ -976,25 +1180,46 @@ onMounted(() => {
         </div>
 
         <div class="rounded-lg border bg-white p-6 shadow-card">
-          <h2 class="mb-4 text-base font-semibold text-slate-900">Pricing</h2>
+          <h2 class="mb-4 text-base font-semibold text-slate-900">
+            Pricing ({{ quotationCurrency?.code ?? 'RWF' }})
+          </h2>
+          <label class="mb-4 flex items-start gap-2 text-sm">
+            <input v-model="excludeVat" type="checkbox" class="mt-0.5 rounded border" />
+            <span>
+              <span class="font-medium text-slate-700">Exclude VAT from this quotation</span>
+              <span class="mt-0.5 block text-xs text-slate-500">
+                Use for government or tax-exempt customers. VAT will not be calculated on the total.
+              </span>
+            </span>
+          </label>
           <dl class="grid gap-2 text-sm">
             <div class="flex justify-between">
               <dt class="text-slate-500">Sub Total</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.subTotal, quotationCurrency) }}</dd>
+              <dd class="font-medium tabular-nums">{{ formatAmount(totals.subTotal, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-slate-500">Discount Amount</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.discountAmount, quotationCurrency) }}</dd>
+              <dd class="font-medium tabular-nums">{{ formatAmount(totals.discountAmount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-slate-500">VAT ({{ effectiveVatRate }}%)</dt>
-              <dd class="font-medium">{{ formatCurrency(totals.vatAmount, quotationCurrency) }}</dd>
+              <dt class="text-slate-500">
+                <template v-if="excludeVat">VAT</template>
+                <template v-else>VAT ({{ effectiveVatRate }}%)</template>
+              </dt>
+              <dd class="font-medium tabular-nums">
+                <template v-if="excludeVat">Excluded</template>
+                <template v-else>{{ formatAmount(totals.vatAmount, quotationCurrency) }}</template>
+              </dd>
             </div>
             <div class="flex justify-between border-t pt-2 text-base font-semibold">
               <dt>TOTAL</dt>
-              <dd>{{ formatCurrency(totals.total, quotationCurrency) }}</dd>
+              <dd class="tabular-nums">{{ formatAmount(totals.total, quotationCurrency) }}</dd>
             </div>
           </dl>
+          <p v-if="totalInWords" class="mt-3 border-t pt-3 text-xs leading-relaxed text-slate-600">
+            <span class="font-medium text-slate-700">Amount in words:</span>
+            {{ totalInWords }} Only
+          </p>
         </div>
       </div>
 

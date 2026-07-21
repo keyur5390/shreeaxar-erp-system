@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T">
-import { onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { onBeforeUnmount, ref, watch, nextTick, type Ref } from 'vue'
 type LoadOptions<T> = (query: string, signal: AbortSignal) => Promise<T[]>
 const props = withDefaults(defineProps<{
   loadOptions: LoadOptions<T>
@@ -20,6 +20,7 @@ const label = (option: T) => props.renderOption ? props.renderOption(option) : S
 const search = () => {
   window.clearTimeout(timer)
   timer = window.setTimeout(async () => {
+    if (syncingFromModel) return
     if (query.value.trim().length < props.minChars) {
       options.value = []
       loadError.value = ''
@@ -42,9 +43,14 @@ const search = () => {
   }, 300)
 }
 watch(query, search)
+let syncingFromModel = false
 watch(() => props.modelValue, (value) => {
-  if (value) query.value = label(value)
-}, { immediate: true })
+  syncingFromModel = true
+  query.value = value ? label(value) : ''
+  nextTick(() => {
+    syncingFromModel = false
+  })
+}, { immediate: true, deep: true })
 onBeforeUnmount(() => controller.value?.abort())
 const choose = (option: T) => { emit('update:modelValue', option); query.value = label(option); open.value = false }
 function closeDropdownLater() {

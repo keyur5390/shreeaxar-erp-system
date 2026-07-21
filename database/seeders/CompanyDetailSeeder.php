@@ -11,7 +11,13 @@ class CompanyDetailSeeder extends Seeder
     {
         CompanyDetail::updateOrCreate(
             ['id' => 'singleton'],
-            ['name' => 'Shree Axar Furniture', 'email' => 'info@shreeaxar.com', 'phone' => '+250 798 113 262', 'website' => 'https://shreeaxar.com', 'address' => 'Near Flyover, Kicukiro Kigali Centre, Kigali, Rwanda']
+            [
+                'name' => 'Shree Axar Studio',
+                'email' => 'info@shreeaxar.com',
+                'phone' => '+250 798 113 262',
+                'website' => 'https://shreeaxar.com',
+                'address' => 'Near Flyover, Kicukiro Kigali Centre, Kigali, Rwanda',
+            ]
         );
     }
 }

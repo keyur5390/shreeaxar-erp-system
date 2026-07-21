@@ -116,9 +116,7 @@ function sendEmail(payload: QuotationEmailPayload) {
 const pdfMutation = useMutation({
   mutationFn: (id: string) => quotationsService.downloadPdf(id),
   onError: (error: unknown) => {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-      ?? (error instanceof Error ? error.message : 'Unable to download PDF.')
-    toast(message, 'error')
+    toast(error instanceof Error ? error.message : 'Unable to download PDF.', 'error')
   },
 })
 

@@ -57,7 +57,7 @@ class CompanyDetailController extends BaseController
     {
         return CompanyDetail::query()->firstOrCreate(
             ['id' => 'singleton'],
-            ['name' => 'Shree Axar Furniture']
+            ['name' => 'Shree Axar Studio']
         );
     }
 

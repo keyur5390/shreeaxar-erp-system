@@ -1,5 +1,7 @@
+import axios from 'axios'
 import api from './api'
 import { createCrudService, unwrap } from './crud'
+import { extractAxiosBlobError, readBlobErrorMessage } from '@/utils/blobResponse'
 import type {
   PaginatedItems,
   QuotationDetail,
@@ -80,16 +82,30 @@ export const quotationsService = {
   },
 
   async downloadPdf(id: string, filename?: string | null): Promise<void> {
-    const response = await api.get(`/quotations/${id}/pdf`, { responseType: 'blob' })
-    const blob = new Blob([response.data], { type: 'application/pdf' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename ? `${filename}.pdf` : `quotation-${id}.pdf`
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+    try {
+      const response = await api.get(`/quotations/${id}/pdf`, {
+        responseType: 'blob',
+        timeout: 120000,
+      })
+
+      const contentType = String(response.headers['content-type'] ?? '')
+      if (!contentType.includes('application/pdf')) {
+        const message = await readBlobErrorMessage(response.data, 'Unable to download PDF.')
+        throw new Error(message)
+      }
+
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename ? `${filename}.pdf` : `quotation-${id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      throw await extractAxiosBlobError(error, 'Unable to download PDF.')
+    }
   },
 
   async sendEmail(id: string, payload?: QuotationEmailPayload): Promise<QuotationEmailResult> {

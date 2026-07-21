@@ -17,6 +17,7 @@ use App\Http\Controllers\API\RoleController;
 use App\Http\Controllers\API\SettingsController;
 use App\Http\Controllers\API\StateController;
 use App\Http\Controllers\API\TaxController;
+use App\Http\Controllers\API\TermsAndConditionController;
 use App\Http\Controllers\API\UnitController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\QuotationController;
@@ -62,6 +63,9 @@ Route::middleware('throttle:300,1')->group(function (): void {
 
             Route::patch('bank-details/{bank_detail}/set-primary', [BankDetailController::class, 'setPrimary']);
             Route::apiResource('bank-details', BankDetailController::class)->except(['show']);
+
+            Route::patch('terms-and-conditions/{terms_and_condition}/set-default', [TermsAndConditionController::class, 'setDefault']);
+            Route::apiResource('terms-and-conditions', TermsAndConditionController::class)->except(['show']);
 
             Route::get('company', [CompanyDetailController::class, 'show']);
             Route::put('company', [CompanyDetailController::class, 'update']);

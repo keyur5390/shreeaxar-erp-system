@@ -22,6 +22,7 @@ class ProductUpdateRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string'],
             'is_tax_included' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
+            'remove_primary_image' => ['sometimes', 'boolean'],
             'keep_image_ids' => ['sometimes', 'string'],
             'primaryImage' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'images' => ['sometimes', 'array'],

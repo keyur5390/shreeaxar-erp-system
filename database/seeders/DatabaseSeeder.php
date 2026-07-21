@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             CounterSeeder::class,
             SettingsSeeder::class,
             BankDetailSeeder::class,
+            TermsAndConditionsSeeder::class,
             UserSeeder::class,
             SampleDataSeeder::class,
         ]);

@@ -50,6 +50,7 @@ const navItems: NavItem[] = [
       { label: 'Countries & States', to: '/masters/countries-states', module: 'countries' },
       { label: 'Quotation Statuses', to: '/masters/quotation-statuses', module: 'quotation_statuses' },
       { label: 'Bank Details', to: '/masters/bank-details', module: 'bank_details' },
+      { label: 'Terms & Conditions', to: '/masters/terms-and-conditions', module: 'terms_and_conditions' },
       { label: 'Company Detail', to: '/masters/company-detail', module: 'company_detail' },
     ],
   },

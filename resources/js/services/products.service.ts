@@ -12,12 +12,15 @@ import type {
   ProductSearchResult,
 } from '@/types'
 
+const uploadConfig = { timeout: 120000 }
+
 function buildProductFormData(
   payload: ProductPayload,
   options?: {
     primaryImage?: File | null
     galleryImages?: File[]
     keepImageIds?: string[]
+    removePrimaryImage?: boolean
   },
 ): FormData {
   const formData = new FormData()
@@ -54,6 +57,10 @@ function buildProductFormData(
     formData.append('images[]', file, file.name)
   })
 
+  if (options?.removePrimaryImage) {
+    formData.append('remove_primary_image', '1')
+  }
+
   if (options?.keepImageIds !== undefined) {
     formData.append('keep_image_ids', JSON.stringify(options.keepImageIds))
   }
@@ -82,7 +89,7 @@ export const productsService = {
     galleryImages?: File[],
   ): Promise<ProductDetail> {
     const formData = buildProductFormData(payload, { primaryImage, galleryImages })
-    return unwrap((await api.post('/products', formData)).data)
+    return unwrap((await api.post('/products', formData, uploadConfig)).data)
   },
 
   async update(
@@ -92,11 +99,12 @@ export const productsService = {
       primaryImage?: File | null
       galleryImages?: File[]
       keepImageIds?: string[]
+      removePrimaryImage?: boolean
     },
   ): Promise<ProductDetail> {
     const formData = buildProductFormData(payload, options)
     formData.append('_method', 'PUT')
-    return unwrap((await api.post(`/products/${id}`, formData)).data)
+    return unwrap((await api.post(`/products/${id}`, formData, uploadConfig)).data)
   },
 
   async remove(id: string): Promise<ProductDeleteResult> {

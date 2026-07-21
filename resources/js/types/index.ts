@@ -40,6 +40,7 @@ export interface PaginatedItems<T> { items: T[]; pagination: { current_page: num
 export interface Address { id: number; address_type_id: number; address_line_1: string; address_line_2?: string | null; city: string; state_id: number; country_id: number; postal_code?: string | null; address_type?: AddressType; state?: State; country?: Country; created_at: string; updated_at: string }
 export interface Tax { id: string; name: string; rate: number; is_default: boolean; is_fixed: boolean; created_at?: string; updated_at?: string }
 export interface BankDetail { id: string; bank_name: string; account_holder_name: string; account_number: string; branch_name?: string | null; swift_code?: string | null; is_active: boolean; is_primary: boolean; created_at?: string; updated_at?: string }
+export interface TermsAndCondition { id: string; name: string; content: string; is_default: boolean; is_active: boolean; created_at?: string; updated_at?: string }
 export interface QuotationStatusMaster { id: string; name: string; color: string; is_system: boolean; is_default: boolean; sort_order: number; quotations_count?: number; created_at?: string; updated_at?: string }
 export interface CompanyDetailRecord { id: string; name: string; logo?: string | null; logo_url?: string | null; email?: string | null; phone?: string | null; address?: string | null; tin_number?: string | null; vat_number?: string | null; website?: string | null; updated_at?: string }
 export interface SettingRecord { key: string; value: string | null }
@@ -183,6 +184,7 @@ export interface QuotationDetail {
   discount_amount: number
   total_amount: number
   vat_rate: number
+  exclude_vat?: boolean
   currency_id: string
   currency_snapshot?: { code: string; symbol: string; decimal_places: number; exchange_rate?: number } | null
   currency?: { id: string; code: string; symbol: string; decimal_places: number } | null
@@ -222,6 +224,7 @@ export interface QuotationPayload {
   bank_detail_id?: string | null
   terms_conditions?: string | null
   notes?: string | null
+  exclude_vat?: boolean
   currency_id?: string
   items: QuotationItemForm[]
   last_modified_at?: string | null

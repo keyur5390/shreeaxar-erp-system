@@ -81,6 +81,12 @@
             padding-right: 12px;
         }
         .items-table .num { text-align: right; white-space: nowrap; }
+        .items-table .image-cell { text-align: center; width: 52px; }
+        .items-table .product-image {
+            max-width: 44px;
+            max-height: 44px;
+            object-fit: contain;
+        }
         .items-table tbody tr:nth-child(even) { background: #f9fafb; }
         .totals-table td {
             padding: 6px 8px;
@@ -112,15 +118,15 @@
             color: #9ca3af;
             font-size: 9px;
         }
-        .logo { max-height: 52px; max-width: 180px; }
+        .logo { max-height: 60px; max-width: 200px; }
     </style>
 </head>
 <body>
     <table class="header">
         <tr>
             <td style="width: 55%;">
-                @if($logoBase64)
-                    <img src="{{ $logoBase64 }}" alt="Shree Axar Ltd" class="logo"><br>
+                @if(!empty($logoPath))
+                    <img src="{{ $logoPath }}" alt="{{ $company->name }}" class="logo"><br>
                 @endif
                 <p class="company-name">{{ $company->name }}</p>
                 <div class="muted">
@@ -203,11 +209,16 @@
         <thead>
             <tr>
                 <th style="width: 4%;">#</th>
-                <th style="width: 34%;">Description</th>
+                @if($hasItemImages)
+                    <th style="width: 6%;">Image</th>
+                @endif
+                <th>Description</th>
                 <th style="width: 8%;">Unit</th>
                 <th style="width: 12%;" class="num">Rate ({{ $quotation->currency_snapshot['code'] ?? $quotation->currency?->code ?? 'RWF' }})</th>
                 <th style="width: 8%;" class="num">Qty</th>
-                <th style="width: 10%;" class="num">Disc %</th>
+                @if($hasDiscount)
+                    <th style="width: 10%;" class="num">Disc %</th>
+                @endif
                 <th style="width: 14%;" class="num">Line Total</th>
             </tr>
         </thead>
@@ -215,6 +226,15 @@
             @forelse($quotation->items as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}</td>
+                    @if($hasItemImages)
+                        <td class="image-cell">
+                            @if(!empty($itemImages[$item->id]))
+                                <img src="{{ $itemImages[$item->id] }}" alt="" class="product-image">
+                            @else
+                                —
+                            @endif
+                        </td>
+                    @endif
                     <td>
                         @if($item->product_id === null && $item->product === null)
                             <strong>[Product Deleted]</strong><br>
@@ -226,12 +246,20 @@
                     <td>{{ $item->unit }}</td>
                     <td class="num">{{ number_format((float) $item->rate, 2) }}</td>
                     <td class="num">{{ (int) $item->quantity }}</td>
-                    <td class="num">{{ number_format((float) $item->discount_rate, 2) }}</td>
+                    @if($hasDiscount)
+                        <td class="num">
+                            @if((float) $item->discount_rate > 0)
+                                {{ number_format((float) $item->discount_rate, 2) }}
+                            @else
+                                —
+                            @endif
+                        </td>
+                    @endif
                     <td class="num">{{ number_format((float) $item->line_total, 2) }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align: center; color: #6b7280;">No line items.</td>
+                    <td colspan="{{ $itemColumnCount }}" style="text-align: center; color: #6b7280;">No line items.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -242,19 +270,32 @@
             <td class="label">Subtotal</td>
             <td class="num">{{ number_format((float) $quotation->sub_total, 2) }}</td>
         </tr>
-        <tr>
-            <td class="label">Discount</td>
-            <td class="num">{{ number_format((float) $quotation->discount_amount, 2) }}</td>
-        </tr>
-        <tr>
-            <td class="label">VAT ({{ number_format((float) $quotation->vat_rate, 2) }}%)</td>
-            <td class="num">{{ number_format((float) $quotation->vat_amount, 2) }}</td>
-        </tr>
+        @if($hasDiscount)
+            <tr>
+                <td class="label">Discount</td>
+                <td class="num">{{ number_format((float) $quotation->discount_amount, 2) }}</td>
+            </tr>
+        @endif
+        @if($quotation->exclude_vat)
+            <tr>
+                <td class="label">VAT</td>
+                <td class="num">Excluded</td>
+            </tr>
+        @else
+            <tr>
+                <td class="label">VAT ({{ number_format((float) $quotation->vat_rate, 2) }}%)</td>
+                <td class="num">{{ number_format((float) $quotation->vat_amount, 2) }}</td>
+            </tr>
+        @endif
         <tr>
             <td class="label grand">Grand Total ({{ $quotation->currency_snapshot['code'] ?? $quotation->currency?->code ?? 'RWF' }})</td>
             <td class="num grand">{{ number_format((float) $quotation->total_amount, 2) }}</td>
         </tr>
     </table>
+
+    <div class="notes" style="margin-top: -8px; margin-bottom: 16px;">
+        <strong>Amount in words:</strong> {{ $amountInWords }} Only
+    </div>
 
     @if($quotation->terms_conditions)
         <div class="section-title">Terms &amp; Conditions</div>
@@ -267,7 +308,7 @@
     @endif
 
     <div class="footer">
-        Shree Axar Ltd · {{ now()->format('d M Y H:i') }}
+        {{ $company->name }} · {{ now()->format('d M Y H:i') }}
     </div>
 </body>
 </html>

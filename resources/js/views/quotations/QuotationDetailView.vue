@@ -14,6 +14,7 @@ import { quotationsService } from '@/services/quotations.service'
 import type { QuotationEmailPayload } from '@/services/quotations.service'
 import { useToast } from '@/composables/useToast'
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/formatters'
+import { amountInWords } from '@/utils/amountInWords'
 import { isTerminalQuotationStatus } from '@/utils/quotationStatuses'
 import type { QuotationItemDetail, QuotationStatusMaster } from '@/types'
 
@@ -43,6 +44,14 @@ const allowedStatusesQuery = useQuery({
 
 const quotation = computed(() => quotationQuery.data.value)
 const quotationCurrency = computed(() => quotation.value?.currency ?? quotation.value?.currency_snapshot ?? null)
+const totalInWords = computed(() => {
+  if (!quotation.value || !quotationCurrency.value) return ''
+  return amountInWords(
+    quotation.value.total_amount,
+    quotationCurrency.value.code,
+    quotationCurrency.value.decimal_places ?? 0,
+  )
+})
 const allowedStatuses = computed(() => allowedStatusesQuery.data.value ?? [])
 
 const canDelete = computed(() => quotation.value?.status?.name === 'Drafted')
@@ -141,9 +150,7 @@ const pdfMutation = useMutation({
   mutationFn: () => quotationsService.downloadPdf(quotationId.value, quotation.value?.quotation_number),
   onSuccess: () => toast('PDF downloaded successfully.', 'success'),
   onError: (error: unknown) => {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
-      ?? (error instanceof Error ? error.message : 'Unable to download PDF.')
-    toast(message, 'error')
+    toast(error instanceof Error ? error.message : 'Unable to download PDF.', 'error')
   },
 })
 
@@ -373,14 +380,24 @@ function productLink(item: QuotationItemDetail): string | null {
               <dd>{{ formatCurrency(quotation.discount_amount, quotationCurrency) }}</dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-slate-500">VAT ({{ quotation.vat_rate }}%)</dt>
-              <dd>{{ formatCurrency(quotation.vat_amount, quotationCurrency) }}</dd>
+              <dt class="text-slate-500">
+                <template v-if="quotation.exclude_vat">VAT</template>
+                <template v-else>VAT ({{ quotation.vat_rate }}%)</template>
+              </dt>
+              <dd>
+                <template v-if="quotation.exclude_vat">Excluded</template>
+                <template v-else>{{ formatCurrency(quotation.vat_amount, quotationCurrency) }}</template>
+              </dd>
             </div>
             <div class="flex justify-between border-t pt-2 text-base font-semibold">
               <dt>TOTAL</dt>
               <dd>{{ formatCurrency(quotation.total_amount, quotationCurrency) }}</dd>
             </div>
           </dl>
+          <p v-if="totalInWords" class="mt-3 border-t pt-3 text-xs leading-relaxed text-slate-600">
+            <span class="font-medium text-slate-700">Amount in words:</span>
+            {{ totalInWords }} Only
+          </p>
         </div>
       </div>
 

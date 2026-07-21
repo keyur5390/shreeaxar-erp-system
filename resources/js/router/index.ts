@@ -46,6 +46,7 @@ const protectedChildren: RouteRecordRaw[] = [
   { path: 'masters/countries-states', name: 'CountriesStates', component: lazy(() => import('@/pages/masters/CountriesStates.vue')), meta: { requiresAuth: true, module: 'countries', breadcrumb: 'Countries & States' } },
   { path: 'masters/quotation-statuses', name: 'QuotationStatuses', component: lazy(() => import('@/pages/masters/QuotationStatuses.vue')), meta: { requiresAuth: true, module: 'quotation_statuses', breadcrumb: 'Quotation Statuses' } },
   { path: 'masters/bank-details', name: 'BankDetails', component: lazy(() => import('@/pages/masters/BankDetails.vue')), meta: { requiresAuth: true, module: 'bank_details', breadcrumb: 'Bank Details' } },
+  { path: 'masters/terms-and-conditions', name: 'TermsAndConditions', component: lazy(() => import('@/pages/masters/TermsAndConditions.vue')), meta: { requiresAuth: true, module: 'terms_and_conditions', breadcrumb: 'Terms & Conditions' } },
   { path: 'masters/company-detail', name: 'CompanyDetail', component: lazy(() => import('@/pages/masters/CompanyDetail.vue')), meta: { requiresAuth: true, module: 'company_detail', breadcrumb: 'Company Detail' } },
   { path: 'masters/tax', redirect: '/masters/taxes' },
   { path: 'masters/:pathMatch(.*)*', name: 'Masters', component: Placeholder, props: titleProps('Masters'), meta: { requiresAuth: true, module: 'masters', breadcrumb: 'Masters' } },

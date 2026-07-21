@@ -251,6 +251,9 @@ class ProductController extends BaseController
                     }
 
                     $primaryPath = $newPrimaryPath;
+                } elseif ($request->boolean('remove_primary_image') && $product->primary_image !== null) {
+                    $filesToDeleteAfterSuccess[] = $product->primary_image;
+                    $primaryPath = null;
                 }
 
                 if ($keepIds !== null) {
@@ -621,6 +624,11 @@ class ProductController extends BaseController
     private function galleryUploads(Request $request): array
     {
         $files = $request->file('images');
+
+        if ($files === null) {
+            $allFiles = $request->allFiles();
+            $files = $allFiles['images'] ?? $allFiles['images[]'] ?? null;
+        }
 
         if ($files === null) {
             return [];

@@ -207,14 +207,24 @@ class QuotationController extends BaseController
 
     public function downloadPdf(QuotationPdfService $pdfService, string $id): \Symfony\Component\HttpFoundation\BinaryFileResponse|JsonResponse
     {
-        $quotation = $this->loadFullQuotation($id);
-        $pdfPath = $pdfService->generate($quotation);
+        try {
+            $quotation = $this->loadFullQuotation($id);
+            $pdfPath = $pdfService->generate($quotation);
 
-        return response()->download(
-            $pdfPath,
-            $quotation->quotation_number.'.pdf',
-            ['Content-Type' => 'application/pdf']
-        )->deleteFileAfterSend();
+            return response()->download(
+                $pdfPath,
+                $quotation->quotation_number.'.pdf',
+                ['Content-Type' => 'application/pdf']
+            )->deleteFileAfterSend();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $message = str_contains(strtolower($exception->getMessage()), 'gd extension')
+                ? $exception->getMessage()
+                : 'Unable to generate quotation PDF. Please try again.';
+
+            return $this->errorResponse($message, 500);
+        }
     }
 
     public function sendEmail(QuotationEmailRequest $request, EmailService $emailService, string $id): JsonResponse
@@ -276,14 +286,16 @@ class QuotationController extends BaseController
     public function store(QuotationStoreRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $vatRate = (float) (Tax::query()->where('is_default', true)->value('rate') ?? 0);
+        $baseVatRate = (float) (Tax::query()->where('is_default', true)->value('rate') ?? 0);
+        $excludeVat = ! empty($validated['exclude_vat']);
+        $vatRate = $excludeVat ? 0 : $baseVatRate;
         $currency = $this->resolveQuotationCurrency($validated['currency_id'] ?? null);
         $items = $this->resolveQuotationItemTaxFlags($validated['items']);
         $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $quotationNumber = $this->quotationNumberService->generate();
         $bankSnapshot = $this->resolveBankSnapshot($validated['bank_detail_id'] ?? null);
 
-        $quotation = DB::transaction(function () use ($validated, $vatRate, $currency, $totals, $quotationNumber, $bankSnapshot): Quotation {
+        $quotation = DB::transaction(function () use ($validated, $baseVatRate, $excludeVat, $currency, $totals, $quotationNumber, $bankSnapshot): Quotation {
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
                 'customer_id' => $validated['customer_id'],
@@ -302,7 +314,8 @@ class QuotationController extends BaseController
                 'currency_id' => $currency->id,
                 'exchange_rate' => $currency->exchange_rate,
                 'currency_snapshot' => $currency->snapshot(),
-                'vat_rate' => $vatRate,
+                'vat_rate' => $baseVatRate,
+                'exclude_vat' => $excludeVat,
                 'revision_number' => 1,
                 'last_modified_at' => now(),
             ]);
@@ -342,13 +355,16 @@ class QuotationController extends BaseController
             }
         }
 
-        $vatRate = (float) $quotation->vat_rate;
+        $excludeVat = array_key_exists('exclude_vat', $validated)
+            ? ! empty($validated['exclude_vat'])
+            : (bool) $quotation->exclude_vat;
+        $vatRate = $excludeVat ? 0 : (float) $quotation->vat_rate;
         $items = $this->resolveQuotationItemTaxFlags($validated['items']);
         $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $bankSnapshot = $this->resolveBankSnapshot($validated['bank_detail_id'] ?? null);
         $previousStatusId = $quotation->status_id;
 
-        DB::transaction(function () use ($quotation, $validated, $totals, $bankSnapshot, $previousStatusId): void {
+        DB::transaction(function () use ($quotation, $validated, $totals, $bankSnapshot, $previousStatusId, $excludeVat): void {
             $quotation->update([
                 'customer_id' => $validated['customer_id'],
                 'status_id' => $validated['status_id'],
@@ -363,6 +379,7 @@ class QuotationController extends BaseController
                 'vat_amount' => $totals['vatAmount'],
                 'discount_amount' => $totals['discountAmount'],
                 'total_amount' => $totals['total'],
+                'exclude_vat' => $excludeVat,
                 'revision_number' => $quotation->revision_number + 1,
                 'last_modified_at' => now(),
             ]);
@@ -466,8 +483,9 @@ class QuotationController extends BaseController
             ];
         }
 
-        $vatRate = (float) $original->vat_rate;
         $items = $this->resolveQuotationItemTaxFlags($items);
+        $excludeVat = (bool) $original->exclude_vat;
+        $vatRate = $excludeVat ? 0 : (float) $original->vat_rate;
         $totals = $this->calculationService->calculateQuotationTotals($items, $vatRate);
         $quotationNumber = $this->quotationNumberService->generate();
         $today = now()->toDateString();
@@ -493,6 +511,7 @@ class QuotationController extends BaseController
                 'exchange_rate' => $duplicateCurrency->exchange_rate,
                 'currency_snapshot' => $duplicateCurrency->snapshot(),
                 'vat_rate' => $original->vat_rate,
+                'exclude_vat' => $excludeVat,
                 'revision_number' => 1,
                 'last_modified_at' => now(),
             ]);
@@ -742,8 +761,8 @@ class QuotationController extends BaseController
         return [
             'id' => $quotation->id,
             'quotation_number' => $quotation->quotation_number,
-            'quotation_date' => $quotation->quotation_date,
-            'expiry_date' => $quotation->expiry_date,
+            'quotation_date' => $quotation->quotation_date?->format('Y-m-d'),
+            'expiry_date' => $quotation->expiry_date?->format('Y-m-d'),
             'total_amount' => (float) $quotation->total_amount,
             'currency_snapshot' => $quotation->currency_snapshot,
             'expiry_status' => $this->computeExpiryStatus($quotation),
@@ -772,8 +791,8 @@ class QuotationController extends BaseController
             'quotation_number' => $quotation->quotation_number,
             'customer_id' => $quotation->customer_id,
             'status_id' => $quotation->status_id,
-            'quotation_date' => $quotation->quotation_date,
-            'expiry_date' => $quotation->expiry_date,
+            'quotation_date' => $quotation->quotation_date?->format('Y-m-d'),
+            'expiry_date' => $quotation->expiry_date?->format('Y-m-d'),
             'authorized_by_id' => $quotation->authorized_by_id,
             'bank_detail_id' => $quotation->bank_detail_id,
             'bank_snapshot' => $quotation->bank_snapshot,
@@ -792,6 +811,7 @@ class QuotationController extends BaseController
                 'decimal_places' => (int) $quotation->currency->decimal_places,
             ] : ($quotation->currency_snapshot ?: null),
             'vat_rate' => (float) $quotation->vat_rate,
+            'exclude_vat' => (bool) $quotation->exclude_vat,
             'revision_number' => $quotation->revision_number,
             'last_modified_at' => $quotation->last_modified_at,
             'expiry_status' => $this->computeExpiryStatus($quotation),

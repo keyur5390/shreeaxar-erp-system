@@ -3,14 +3,19 @@ import type { CurrencyLike } from '@/utils/currency'
 const dateFormatter = new Intl.DateTimeFormat('en-GB')
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
 
-export function formatMoney(amount: number, currency?: CurrencyLike | null): string {
-  const symbol = currency?.symbol || currency?.code || 'RWF'
+export function formatAmount(amount: number, currency?: CurrencyLike | null): string {
   const decimals = currency?.decimal_places ?? 0
 
-  return `${symbol} ${new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(amount || 0)}`
+  }).format(amount || 0)
+}
+
+export function formatMoney(amount: number, currency?: CurrencyLike | null): string {
+  const symbol = currency?.symbol || currency?.code || 'RWF'
+
+  return `${symbol} ${formatAmount(amount, currency)}`
 }
 
 export function formatCurrency(amount: number, currency?: CurrencyLike | null): string {

@@ -37,6 +37,7 @@ const isEdit = computed(() => Boolean(productId.value))
 const submitError = ref('')
 const primaryImageFile = ref<File | null>(null)
 const primaryPreview = ref<string | null>(null)
+const removePrimaryImage = ref(false)
 const galleryImages = ref<GalleryItem[]>([])
 const skipReorder = ref(true)
 const initialExistingImageCount = ref(0)
@@ -142,6 +143,7 @@ watch(
 
     primaryPreview.value = product.primary_image_url
     primaryImageFile.value = null
+    removePrimaryImage.value = false
 
     skipReorder.value = true
     galleryImages.value = product.images.map((image) => ({
@@ -205,12 +207,17 @@ function revokePreview(url: string | null) {
 }
 
 function setPrimaryFile(file: File) {
+  if (!isImageFile(file)) {
+    toast('Please select a JPG, PNG, or WEBP image.', 'error')
+    return
+  }
   if (file.size > 2 * 1024 * 1024) {
     toast('Primary image must be 2MB or smaller.', 'error')
     return
   }
   revokePreview(primaryPreview.value)
   primaryImageFile.value = file
+  removePrimaryImage.value = false
   primaryPreview.value = URL.createObjectURL(file)
 }
 
@@ -222,13 +229,14 @@ function onPrimarySelect(event: Event) {
 function onPrimaryDrop(event: DragEvent) {
   primaryDragOver.value = false
   const file = event.dataTransfer?.files?.[0]
-  if (file?.type.startsWith('image/')) setPrimaryFile(file)
+  if (file) setPrimaryFile(file)
 }
 
 function removePrimary() {
   revokePreview(primaryPreview.value)
   primaryImageFile.value = null
   primaryPreview.value = null
+  removePrimaryImage.value = true
 }
 
 function isImageFile(file: File): boolean {
@@ -300,6 +308,7 @@ const saveMutation = useMutation({
         primaryImage: primaryImageFile.value,
         galleryImages: newGalleryFiles,
         keepImageIds: keepImageIds.value,
+        removePrimaryImage: removePrimaryImage.value,
       })
     }
 
@@ -386,7 +395,9 @@ onUnmounted(() => {
           </label>
 
           <label class="block text-sm">
-            <span class="mb-1 block font-medium text-slate-700">Rate <span class="text-red-500">*</span></span>
+            <span class="mb-1 block font-medium text-slate-700">
+              Rate ({{ productCurrency?.code ?? 'RWF' }}) <span class="text-red-500">*</span>
+            </span>
             <Field v-slot="{ field }" name="rate">
               <CurrencyInput
                 :model-value="field.value"
@@ -473,7 +484,7 @@ onUnmounted(() => {
                 <Upload class="h-8 w-8" />
                 <p class="text-sm">Click or drag to upload primary image</p>
               </div>
-              <input ref="primaryInput" type="file" accept="image/*" class="sr-only" @change="onPrimarySelect" />
+              <input ref="primaryInput" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" class="sr-only" @change="onPrimarySelect" />
             </div>
             <button
               v-if="primaryPreview"

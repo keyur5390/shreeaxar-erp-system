@@ -15,7 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $modules = [
             'dashboard', 'roles', 'departments', 'units', 'currencies', 'taxes', 'address_types',
-            'countries', 'quotation_statuses', 'bank_details', 'company_detail',
+            'countries', 'quotation_statuses', 'bank_details', 'terms_and_conditions', 'company_detail',
             'users', 'customers', 'products', 'quotations',
         ];
         $actions = ['view', 'create', 'edit', 'delete'];
@@ -40,6 +40,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $this->permissionNames('customers', ['view', 'create', 'edit', 'delete']),
             $this->permissionNames('products', ['view', 'create', 'edit']),
             $this->permissionNames('currencies', ['view']),
+            $this->permissionNames('terms_and_conditions', ['view']),
             ['view dashboard'],
         );
 

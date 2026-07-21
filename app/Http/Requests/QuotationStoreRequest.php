@@ -24,6 +24,7 @@ class QuotationStoreRequest extends FormRequest
             'currency_id' => ['required', 'uuid', 'exists:currencies,id'],
             'terms_conditions' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'exclude_vat' => ['sometimes', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'uuid', 'exists:products,id'],
             'items.*.description' => ['required', 'string', 'max:500'],

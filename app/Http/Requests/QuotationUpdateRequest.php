@@ -24,6 +24,7 @@ class QuotationUpdateRequest extends FormRequest
             'currency_id' => ['sometimes', 'uuid', 'exists:currencies,id'],
             'terms_conditions' => ['nullable', 'string'],
             'notes' => ['nullable', 'string'],
+            'exclude_vat' => ['sometimes', 'boolean'],
             'last_modified_at' => ['sometimes', 'nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['nullable', 'uuid', 'exists:products,id'],
